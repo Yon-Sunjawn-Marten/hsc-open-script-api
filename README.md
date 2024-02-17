@@ -24,8 +24,8 @@ The scripts also list the required sapien editor objects that need to be placed 
 Its amazing what could have been if the developers focused more on the firefight game mode. And thanks to 343 expanding it to 8 players, the possibilities are near limitless.
 
 # Youtube tutorials
-## [Heading link](https://www.youtube.com/ "Halo Reach Firefight - Start to Finish")
-## [Heading link](https://www.youtube.com/ "HSC OSA Showcase for Halo Reach")
+## [Halo Reach Firefight - Start to Finish](https://www.youtube.com/ "Halo Reach Firefight - Start to Finish")
+## [HSC OSA Showcase for Halo Reach](https://www.youtube.com/ "HSC OSA Showcase for Halo Reach")
 
 # Available Game Modes:
 ## Warzone (vs firefight)
