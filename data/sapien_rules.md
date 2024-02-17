@@ -11,4 +11,4 @@
 **Your scripts will not execute AT ALL if any of these are a return type. Built in functions are exempt.**
 
 Sapien stack is sensitive to repeated function calls within a single branch. I don't think this applies to built-in scripts.
-1. You will get a stack overflow --- siliently --- and the thread will stop executing. Other scripts will continue running normally.
+1. You will get a stack overflow --- siliently --- and the thread will stop executing. Other threads will continue running normally.
