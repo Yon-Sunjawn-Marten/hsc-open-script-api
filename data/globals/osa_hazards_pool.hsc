@@ -68,7 +68,7 @@
     )
 ); period in ticks. Default is 1 minute.
 
-(script static void (intf_pool_add_hazard (ai squad) (short type) (short side) (short event_index))
+(script static void (intf_hazpl_add_hazard (ai squad) (short type) (short side) (short event_index))
 	(print_if dbg_hazpl "registering a hazard/event")
 	(if dbg_hazpl
 		(inspect type)
@@ -180,40 +180,6 @@
     )
 ) ; if you want to have the enemies marked as they spawn. Permanent until they die.
 
-(script static void (intf_hazpl_use_transport (ai squad) (ai transport))
-	(cond
-        ((= intf_hazpl_sq_0 squad)
-            (set intf_hazpl_sq_t_0 transport)
-        )
-        ((= intf_hazpl_sq_1 squad)
-            (set intf_hazpl_sq_t_1 transport)
-        )
-        ((= intf_hazpl_sq_2 squad)
-            (set intf_hazpl_sq_t_2 transport)
-        )
-        ((= intf_hazpl_sq_3 squad)
-            (set intf_hazpl_sq_t_3 transport)
-        )
-        ((= intf_hazpl_sq_4 squad)
-            (set intf_hazpl_sq_t_4 transport)
-        )
-        ((= intf_hazpl_sq_5 squad)
-            (set intf_hazpl_sq_t_5 transport)
-        )
-        ((= intf_hazpl_sq_6 squad)
-            (set intf_hazpl_sq_t_6 transport)
-        )
-        ((= intf_hazpl_sq_7 squad)
-            (set intf_hazpl_sq_t_7 transport)
-        )
-        ((= intf_hazpl_sq_8 squad)
-            (set intf_hazpl_sq_t_8 transport)
-        )
-        (TRUE
-            (print "ERROR: squad not a hazard")
-        )
-    )
-)
 
 ;; ------------------------------------------------------------------------
 ;; -------------------------- INTERFACES ----------------------------------
@@ -335,24 +301,6 @@
 (global ai intf_hazpl_sq_6 NONE)
 (global ai intf_hazpl_sq_7 NONE)
 (global ai intf_hazpl_sq_8 NONE)
-(global ai intf_hazpl_sq_t_0 NONE) ; transport to use if applicable
-(global ai intf_hazpl_sq_t_1 NONE) ; transport to use if applicable
-(global ai intf_hazpl_sq_t_2 NONE) ; transport to use if applicable
-(global ai intf_hazpl_sq_t_3 NONE) ; transport to use if applicable
-(global ai intf_hazpl_sq_t_4 NONE) ; transport to use if applicable
-(global ai intf_hazpl_sq_t_5 NONE) ; transport to use if applicable
-(global ai intf_hazpl_sq_t_6 NONE) ; transport to use if applicable
-(global ai intf_hazpl_sq_t_7 NONE) ; transport to use if applicable
-(global ai intf_hazpl_sq_t_8 NONE) ; transport to use if applicable
-(global vehicle intf_hazpl_sq_tv_0 NONE) ; transport vehicle to use if applicable. We want to store immediately the unsafe thread value.
-(global vehicle intf_hazpl_sq_tv_1 NONE)
-(global vehicle intf_hazpl_sq_tv_2 NONE)
-(global vehicle intf_hazpl_sq_tv_3 NONE)
-(global vehicle intf_hazpl_sq_tv_4 NONE)
-(global vehicle intf_hazpl_sq_tv_5 NONE)
-(global vehicle intf_hazpl_sq_tv_6 NONE)
-(global vehicle intf_hazpl_sq_tv_7 NONE)
-(global vehicle intf_hazpl_sq_tv_8 NONE)
 (global short intf_hazpl_sq_event_idx_0 0)
 (global short intf_hazpl_sq_event_idx_1 0)
 (global short intf_hazpl_sq_event_idx_2 0)
@@ -519,25 +467,15 @@
 	(sleep_until 
 		(begin 
 			(sleep_until (osa_hazpl_get_event_by_idx intf_hazpl_sq_event_idx_0) 5)
-			(if (and (= intf_hazpl_spawn_amt_0 1) (!= NONE intf_hazpl_sq_t_0) (osa_director_type_can_transport intf_hazpl_sq_type_0))
-				(begin 
-					(sleep_until (= (ai_living_count intf_hazpl_sq_t_0) 0) 5)
-					(ai_place intf_hazpl_sq_t_0)
-					(sleep_until (> (ai_living_count intf_hazpl_sq_t_0) 0) 1)
-					(intf_pool_get_transport_running_script intf_hazpl_sq_t_0)
-					(set intf_hazpl_sq_tv_0 intf_pool_t_running_export)
-					(osa_hazpl_handle_tran intf_hazpl_sq_0 intf_hazpl_sq_type_0 intf_hazpl_sq_side_0 intf_hazpl_sq_tv_0 intf_hazpl_use_marker_0)
-				)
-				(begin 
-					(set intf_hazpl_spawn_lp_0 0)
-					(sleep_until
-						(begin
-							(set intf_hazpl_spawn_lp_0 (+ intf_hazpl_spawn_lp_0 1))
-							(osa_hazpl_handle_normal intf_hazpl_sq_0 intf_hazpl_sq_type_0 intf_hazpl_sq_side_0 intf_hazpl_use_marker_0)
-							(>= intf_hazpl_spawn_lp_0 intf_hazpl_spawn_amt_0)
-						)
-					intf_hazpl_spawn_pause_0)
-				)
+			(begin 
+				(set intf_hazpl_spawn_lp_0 0)
+				(sleep_until
+					(begin
+						(set intf_hazpl_spawn_lp_0 (+ intf_hazpl_spawn_lp_0 1))
+						(osa_hazpl_handle_normal intf_hazpl_sq_0 intf_hazpl_sq_type_0 intf_hazpl_sq_side_0 intf_hazpl_use_marker_0)
+						(>= intf_hazpl_spawn_lp_0 intf_hazpl_spawn_amt_0)
+					)
+				intf_hazpl_spawn_pause_0)
 			)
 			(intf_plugin_hazpl_thread_0)
 			FALSE
@@ -549,25 +487,15 @@
 	(sleep_until 
 		(begin 
 			(sleep_until (osa_hazpl_get_event_by_idx intf_hazpl_sq_event_idx_1) 5)
-			(if (and (= intf_hazpl_spawn_amt_1 1) (!= NONE intf_hazpl_sq_t_1) (osa_director_type_can_transport intf_hazpl_sq_type_1))
-				(begin 
-					(sleep_until (= (ai_living_count intf_hazpl_sq_t_1) 0) 5)
-					(ai_place intf_hazpl_sq_t_1)
-					(sleep_until (> (ai_living_count intf_hazpl_sq_t_1) 0) 1)
-					(intf_pool_get_transport_running_script intf_hazpl_sq_t_1)
-					(set intf_hazpl_sq_tv_1 intf_pool_t_running_export)
-					(osa_hazpl_handle_tran intf_hazpl_sq_1 intf_hazpl_sq_type_1 intf_hazpl_sq_side_1 intf_hazpl_sq_tv_1 intf_hazpl_use_marker_1)
-				)
-				(begin 
-					(set intf_hazpl_spawn_lp_1 0)
-					(sleep_until
-						(begin
-							(set intf_hazpl_spawn_lp_1 (+ intf_hazpl_spawn_lp_1 1))
-							(osa_hazpl_handle_normal intf_hazpl_sq_1 intf_hazpl_sq_type_1 intf_hazpl_sq_side_1 intf_hazpl_use_marker_1)
-							(>= intf_hazpl_spawn_lp_1 intf_hazpl_spawn_amt_1)
-						)
-					intf_hazpl_spawn_pause_1)
-				)
+			(begin 
+				(set intf_hazpl_spawn_lp_1 0)
+				(sleep_until
+					(begin
+						(set intf_hazpl_spawn_lp_1 (+ intf_hazpl_spawn_lp_1 1))
+						(osa_hazpl_handle_normal intf_hazpl_sq_1 intf_hazpl_sq_type_1 intf_hazpl_sq_side_1 intf_hazpl_use_marker_1)
+						(>= intf_hazpl_spawn_lp_1 intf_hazpl_spawn_amt_1)
+					)
+				intf_hazpl_spawn_pause_1)
 			)
 			(intf_plugin_hazpl_thread_1)
 			FALSE
@@ -579,25 +507,15 @@
 	(sleep_until 
 		(begin 
 			(sleep_until (osa_hazpl_get_event_by_idx intf_hazpl_sq_event_idx_2) 5)
-			(if (and (= intf_hazpl_spawn_amt_2 1) (!= NONE intf_hazpl_sq_t_2) (osa_director_type_can_transport intf_hazpl_sq_type_2))
-				(begin 
-					(sleep_until (= (ai_living_count intf_hazpl_sq_t_2) 0) 5)
-					(ai_place intf_hazpl_sq_t_2)
-					(sleep_until (> (ai_living_count intf_hazpl_sq_t_2) 0) 1)
-					(intf_pool_get_transport_running_script intf_hazpl_sq_t_2)
-					(set intf_hazpl_sq_tv_2 intf_pool_t_running_export)
-					(osa_hazpl_handle_tran intf_hazpl_sq_2 intf_hazpl_sq_type_2 intf_hazpl_sq_side_2 intf_hazpl_sq_tv_2 intf_hazpl_use_marker_2)
-				)
-				(begin 
-					(set intf_hazpl_spawn_lp_2 0)
-					(sleep_until
-						(begin
-							(set intf_hazpl_spawn_lp_2 (+ intf_hazpl_spawn_lp_2 1))
-							(osa_hazpl_handle_normal intf_hazpl_sq_2 intf_hazpl_sq_type_2 intf_hazpl_sq_side_2 intf_hazpl_use_marker_2)
-							(>= intf_hazpl_spawn_lp_2 intf_hazpl_spawn_amt_2)
-						)
-					intf_hazpl_spawn_pause_2)
-				)
+			(begin 
+				(set intf_hazpl_spawn_lp_2 0)
+				(sleep_until
+					(begin
+						(set intf_hazpl_spawn_lp_2 (+ intf_hazpl_spawn_lp_2 1))
+						(osa_hazpl_handle_normal intf_hazpl_sq_2 intf_hazpl_sq_type_2 intf_hazpl_sq_side_2 intf_hazpl_use_marker_2)
+						(>= intf_hazpl_spawn_lp_2 intf_hazpl_spawn_amt_2)
+					)
+				intf_hazpl_spawn_pause_2)
 			)
 			(intf_plugin_hazpl_thread_2)
 			FALSE
@@ -609,25 +527,15 @@
 	(sleep_until 
 		(begin 
 			(sleep_until (osa_hazpl_get_event_by_idx intf_hazpl_sq_event_idx_3) 5)
-			(if (and (= intf_hazpl_spawn_amt_3 1) (!= NONE intf_hazpl_sq_t_3) (osa_director_type_can_transport intf_hazpl_sq_type_3))
-				(begin 
-					(sleep_until (= (ai_living_count intf_hazpl_sq_t_3) 0) 5)
-					(ai_place intf_hazpl_sq_t_3)
-					(sleep_until (> (ai_living_count intf_hazpl_sq_t_3) 0) 1)
-					(intf_pool_get_transport_running_script intf_hazpl_sq_t_3)
-					(set intf_hazpl_sq_tv_3 intf_pool_t_running_export)
-					(osa_hazpl_handle_tran intf_hazpl_sq_3 intf_hazpl_sq_type_3 intf_hazpl_sq_side_3 intf_hazpl_sq_tv_3 intf_hazpl_use_marker_3)
-				)
-				(begin 
-					(set intf_hazpl_spawn_lp_3 0)
-					(sleep_until
-						(begin
-							(set intf_hazpl_spawn_lp_3 (+ intf_hazpl_spawn_lp_3 1))
-							(osa_hazpl_handle_normal intf_hazpl_sq_3 intf_hazpl_sq_type_3 intf_hazpl_sq_side_3 intf_hazpl_use_marker_3)
-							(>= intf_hazpl_spawn_lp_3 intf_hazpl_spawn_amt_3)
-						)
-					intf_hazpl_spawn_pause_3)
-				)
+			(begin 
+				(set intf_hazpl_spawn_lp_3 0)
+				(sleep_until
+					(begin
+						(set intf_hazpl_spawn_lp_3 (+ intf_hazpl_spawn_lp_3 1))
+						(osa_hazpl_handle_normal intf_hazpl_sq_3 intf_hazpl_sq_type_3 intf_hazpl_sq_side_3 intf_hazpl_use_marker_3)
+						(>= intf_hazpl_spawn_lp_3 intf_hazpl_spawn_amt_3)
+					)
+				intf_hazpl_spawn_pause_3)
 			)
 			(intf_plugin_hazpl_thread_3)
 			FALSE
@@ -639,25 +547,15 @@
 	(sleep_until 
 		(begin 
 			(sleep_until (osa_hazpl_get_event_by_idx intf_hazpl_sq_event_idx_4) 5)
-			(if (and (= intf_hazpl_spawn_amt_4 1) (!= NONE intf_hazpl_sq_t_4) (osa_director_type_can_transport intf_hazpl_sq_type_4))
-				(begin 
-					(sleep_until (= (ai_living_count intf_hazpl_sq_t_4) 0) 5)
-					(ai_place intf_hazpl_sq_t_4)
-					(sleep_until (> (ai_living_count intf_hazpl_sq_t_4) 0) 1)
-					(intf_pool_get_transport_running_script intf_hazpl_sq_t_4)
-					(set intf_hazpl_sq_tv_4 intf_pool_t_running_export)
-					(osa_hazpl_handle_tran intf_hazpl_sq_4 intf_hazpl_sq_type_4 intf_hazpl_sq_side_4 intf_hazpl_sq_tv_4 intf_hazpl_use_marker_4)
-				)
-				(begin 
-					(set intf_hazpl_spawn_lp_4 0)
-					(sleep_until
-						(begin
-							(set intf_hazpl_spawn_lp_4 (+ intf_hazpl_spawn_lp_4 1))
-							(osa_hazpl_handle_normal intf_hazpl_sq_4 intf_hazpl_sq_type_4 intf_hazpl_sq_side_4 intf_hazpl_use_marker_4)
-							(>= intf_hazpl_spawn_lp_4 intf_hazpl_spawn_amt_4)
-						)
-					intf_hazpl_spawn_pause_4)
-				)
+			(begin 
+				(set intf_hazpl_spawn_lp_4 0)
+				(sleep_until
+					(begin
+						(set intf_hazpl_spawn_lp_4 (+ intf_hazpl_spawn_lp_4 1))
+						(osa_hazpl_handle_normal intf_hazpl_sq_4 intf_hazpl_sq_type_4 intf_hazpl_sq_side_4 intf_hazpl_use_marker_4)
+						(>= intf_hazpl_spawn_lp_4 intf_hazpl_spawn_amt_4)
+					)
+				intf_hazpl_spawn_pause_4)
 			)
 			(intf_plugin_hazpl_thread_4)
 			FALSE
@@ -669,25 +567,15 @@
 	(sleep_until 
 		(begin 
 			(sleep_until (osa_hazpl_get_event_by_idx intf_hazpl_sq_event_idx_5) 5)
-			(if (and (= intf_hazpl_spawn_amt_5 1) (!= NONE intf_hazpl_sq_t_5) (osa_director_type_can_transport intf_hazpl_sq_type_5))
-				(begin 
-					(sleep_until (= (ai_living_count intf_hazpl_sq_t_5) 0) 5)
-					(ai_place intf_hazpl_sq_t_5)
-					(sleep_until (> (ai_living_count intf_hazpl_sq_t_5) 0) 1)
-					(intf_pool_get_transport_running_script intf_hazpl_sq_t_5)
-					(set intf_hazpl_sq_tv_5 intf_pool_t_running_export)
-					(osa_hazpl_handle_tran intf_hazpl_sq_5 intf_hazpl_sq_type_5 intf_hazpl_sq_side_5 intf_hazpl_sq_tv_5 intf_hazpl_use_marker_5)
-				)
-				(begin 
-					(set intf_hazpl_spawn_lp_5 0)
-					(sleep_until
-						(begin
-							(set intf_hazpl_spawn_lp_5 (+ intf_hazpl_spawn_lp_5 1))
-							(osa_hazpl_handle_normal intf_hazpl_sq_5 intf_hazpl_sq_type_5 intf_hazpl_sq_side_5 intf_hazpl_use_marker_5)
-							(>= intf_hazpl_spawn_lp_5 intf_hazpl_spawn_amt_5)
-						)
-					intf_hazpl_spawn_pause_5)
-				)
+			(begin 
+				(set intf_hazpl_spawn_lp_5 0)
+				(sleep_until
+					(begin
+						(set intf_hazpl_spawn_lp_5 (+ intf_hazpl_spawn_lp_5 1))
+						(osa_hazpl_handle_normal intf_hazpl_sq_5 intf_hazpl_sq_type_5 intf_hazpl_sq_side_5 intf_hazpl_use_marker_5)
+						(>= intf_hazpl_spawn_lp_5 intf_hazpl_spawn_amt_5)
+					)
+				intf_hazpl_spawn_pause_5)
 			)
 			(intf_plugin_hazpl_thread_5)
 			FALSE
@@ -699,25 +587,15 @@
 	(sleep_until 
 		(begin 
 			(sleep_until (osa_hazpl_get_event_by_idx intf_hazpl_sq_event_idx_6) 5)
-			(if (and (= intf_hazpl_spawn_amt_6 1) (!= NONE intf_hazpl_sq_t_6) (osa_director_type_can_transport intf_hazpl_sq_type_6))
-				(begin 
-					(sleep_until (= (ai_living_count intf_hazpl_sq_t_6) 0) 5)
-					(ai_place intf_hazpl_sq_t_6)
-					(sleep_until (> (ai_living_count intf_hazpl_sq_t_6) 0) 1)
-					(intf_pool_get_transport_running_script intf_hazpl_sq_t_6)
-					(set intf_hazpl_sq_tv_6 intf_pool_t_running_export)
-					(osa_hazpl_handle_tran intf_hazpl_sq_6 intf_hazpl_sq_type_6 intf_hazpl_sq_side_6 intf_hazpl_sq_tv_6 intf_hazpl_use_marker_6)
-				)
-				(begin 
-					(set intf_hazpl_spawn_lp_6 0)
-					(sleep_until
-						(begin
-							(set intf_hazpl_spawn_lp_6 (+ intf_hazpl_spawn_lp_6 1))
-							(osa_hazpl_handle_normal intf_hazpl_sq_6 intf_hazpl_sq_type_6 intf_hazpl_sq_side_6 intf_hazpl_use_marker_6)
-							(>= intf_hazpl_spawn_lp_6 intf_hazpl_spawn_amt_6)
-						)
-					intf_hazpl_spawn_pause_6)
-				)
+			(begin 
+				(set intf_hazpl_spawn_lp_6 0)
+				(sleep_until
+					(begin
+						(set intf_hazpl_spawn_lp_6 (+ intf_hazpl_spawn_lp_6 1))
+						(osa_hazpl_handle_normal intf_hazpl_sq_6 intf_hazpl_sq_type_6 intf_hazpl_sq_side_6 intf_hazpl_use_marker_6)
+						(>= intf_hazpl_spawn_lp_6 intf_hazpl_spawn_amt_6)
+					)
+				intf_hazpl_spawn_pause_6)
 			)
 			(intf_plugin_hazpl_thread_6)
 			FALSE
@@ -729,25 +607,15 @@
 	(sleep_until 
 		(begin 
 			(sleep_until (osa_hazpl_get_event_by_idx intf_hazpl_sq_event_idx_7) 5)
-			(if (and (= intf_hazpl_spawn_amt_7 1) (!= NONE intf_hazpl_sq_t_7) (osa_director_type_can_transport intf_hazpl_sq_type_7))
-				(begin 
-					(sleep_until (= (ai_living_count intf_hazpl_sq_t_7) 0) 5)
-					(ai_place intf_hazpl_sq_t_7)
-					(sleep_until (> (ai_living_count intf_hazpl_sq_t_7) 0) 1)
-					(intf_pool_get_transport_running_script intf_hazpl_sq_t_7)
-					(set intf_hazpl_sq_tv_7 intf_pool_t_running_export)
-					(osa_hazpl_handle_tran intf_hazpl_sq_7 intf_hazpl_sq_type_7 intf_hazpl_sq_side_7 intf_hazpl_sq_tv_7 intf_hazpl_use_marker_7)
-				)
-				(begin 
-					(set intf_hazpl_spawn_lp_7 0)
-					(sleep_until
-						(begin
-							(set intf_hazpl_spawn_lp_7 (+ intf_hazpl_spawn_lp_7 1))
-							(osa_hazpl_handle_normal intf_hazpl_sq_7 intf_hazpl_sq_type_7 intf_hazpl_sq_side_7 intf_hazpl_use_marker_7)
-							(>= intf_hazpl_spawn_lp_7 intf_hazpl_spawn_amt_7)
-						)
-					intf_hazpl_spawn_pause_7)
-				)
+			(begin 
+				(set intf_hazpl_spawn_lp_7 0)
+				(sleep_until
+					(begin
+						(set intf_hazpl_spawn_lp_7 (+ intf_hazpl_spawn_lp_7 1))
+						(osa_hazpl_handle_normal intf_hazpl_sq_7 intf_hazpl_sq_type_7 intf_hazpl_sq_side_7 intf_hazpl_use_marker_7)
+						(>= intf_hazpl_spawn_lp_7 intf_hazpl_spawn_amt_7)
+					)
+				intf_hazpl_spawn_pause_7)
 			)
 			(intf_plugin_hazpl_thread_7)
 			FALSE
@@ -759,25 +627,15 @@
 	(sleep_until 
 		(begin 
 			(sleep_until (osa_hazpl_get_event_by_idx intf_hazpl_sq_event_idx_8) 5)
-			(if (and (= intf_hazpl_spawn_amt_8 1) (!= NONE intf_hazpl_sq_t_8) (osa_director_type_can_transport intf_hazpl_sq_type_8))
-				(begin 
-					(sleep_until (= (ai_living_count intf_hazpl_sq_t_8) 0) 5)
-					(ai_place intf_hazpl_sq_t_8)
-					(sleep_until (> (ai_living_count intf_hazpl_sq_t_8) 0) 1)
-					(intf_pool_get_transport_running_script intf_hazpl_sq_t_8)
-					(set intf_hazpl_sq_tv_8 intf_pool_t_running_export)
-					(osa_hazpl_handle_tran intf_hazpl_sq_8 intf_hazpl_sq_type_8 intf_hazpl_sq_side_8 intf_hazpl_sq_tv_8 intf_hazpl_use_marker_8)
-				)
-				(begin 
-					(set intf_hazpl_spawn_lp_8 0)
-					(sleep_until
-						(begin
-							(set intf_hazpl_spawn_lp_8 (+ intf_hazpl_spawn_lp_8 1))
-							(osa_hazpl_handle_normal intf_hazpl_sq_8 intf_hazpl_sq_type_8 intf_hazpl_sq_side_8 intf_hazpl_use_marker_8)
-							(>= intf_hazpl_spawn_lp_8 intf_hazpl_spawn_amt_8)
-						)
-					intf_hazpl_spawn_pause_8)
-				)
+			(begin 
+				(set intf_hazpl_spawn_lp_8 0)
+				(sleep_until
+					(begin
+						(set intf_hazpl_spawn_lp_8 (+ intf_hazpl_spawn_lp_8 1))
+						(osa_hazpl_handle_normal intf_hazpl_sq_8 intf_hazpl_sq_type_8 intf_hazpl_sq_side_8 intf_hazpl_use_marker_8)
+						(>= intf_hazpl_spawn_lp_8 intf_hazpl_spawn_amt_8)
+					)
+				intf_hazpl_spawn_pause_8)
 			)
 			(intf_plugin_hazpl_thread_8)
 			FALSE
