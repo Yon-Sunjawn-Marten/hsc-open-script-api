@@ -24,6 +24,13 @@
 ;; ---  Input Settings        ---
 (global short transport_mark_time 900)
 
+
+;; ---  OUTPUT VARS        ---
+(global vehicle intf_pool_t_vehicle_0 NONE) ;; to get current vehicle doing the thing.
+(global vehicle intf_pool_t_vehicle_1 NONE)
+(global vehicle intf_pool_t_vehicle_2 NONE)
+(global vehicle intf_pool_t_vehicle_3 NONE)
+
 ; ======== Interfacing Scripts ========
 
 (script static void (intf_pool_add_drop_point (device dm) (short type))
@@ -209,6 +216,29 @@
 		)
 	)
 )
+
+(script static short (intf_pool_get_transport_track (ai squad_ref))
+	(cond 
+		((= squad_ref intf_pl_t_veh_0)
+			intf_pool_t_cur_sel_0
+		)
+		((= squad_ref intf_pl_t_veh_1)
+			intf_pool_t_cur_sel_1
+		)
+		((= squad_ref intf_pl_t_veh_2)
+			intf_pool_t_cur_sel_2
+		)
+		((= squad_ref intf_pl_t_veh_3)
+			intf_pool_t_cur_sel_3
+		)
+		(TRUE
+			(begin 
+				(print "ERROR: Squad is not a registered transport.")
+				-1
+			)
+		)
+	)
+); -- set this back to false to leave hold. :)
 
 (script static void (intf_pool_add_transport (ai squad) (short side) (string drop_a_side) (string drop_b_side))
     (cond 
@@ -432,39 +462,33 @@
 
 ; (script static void (intf_pool_set_transport))
 
-(global vehicle intf_pool_t_running_export NONE) ; I don't think this is thread safe.
-(global boolean intf_pool_t_running_open true)
-(script static void (intf_pool_get_transport_running_script (ai squad))
-	(sleep_until intf_pool_t_running_open 1)
-	(set intf_pool_t_running_open false)
-	(sleep 10) ; give other scripts some time to use their var.
+(script static short (intf_pool_get_thread_from_sq (ai squad))
 	(cond 
-        ((= intf_pl_t_veh_0 squad)
-            (set intf_pool_t_running_export intf_pool_t_vehicle_0)
-        )
-        ((= intf_pl_t_veh_1 squad)
-            (set intf_pool_t_running_export intf_pool_t_vehicle_1)
-        )
-        ((= intf_pl_t_veh_2 squad)
-            (set intf_pool_t_running_export intf_pool_t_vehicle_2)
-        )
-        ((= intf_pl_t_veh_3 squad)
-            (set intf_pool_t_running_export intf_pool_t_vehicle_3)
-        )
 		((= NONE squad)
 			(begin 
 				(print "INFO_get_running_t: Attempted to get pool squad with a none_type")
-				(set intf_pool_t_running_export NONE)
+				-1
 			)
 		)
+        ((= intf_pl_t_veh_0 squad)
+            0
+        )
+        ((= intf_pl_t_veh_1 squad)
+            1
+        )
+        ((= intf_pl_t_veh_2 squad)
+            2
+        )
+        ((= intf_pl_t_veh_3 squad)
+            3
+        )
         (TRUE
             (begin 
-				(print "ERROR_get_running_t: Squad not assigned to a transport")
-				(set intf_pool_t_running_export NONE)
+				(print "ERROR_get_running_t: Squad not assigned to a transport thread")
+				-1
 			)
         )
     )
-	(set intf_pool_t_running_open true)
 )
 
 ;; ------------------------------------------------------------------------
@@ -509,7 +533,7 @@
 
 ;; -------------------------- PUBLIC VARIABLES Read-Only ----------------------------------
 
-(global boolean dbg_pool true)
+(global boolean dbg_pool false)
 (global boolean osa_pool_insta_clean false)
 
 ;; --- INPUT VARS --- (plugins)
@@ -629,10 +653,6 @@
 (global boolean intf_pool_t_is_holding_1 false)
 (global boolean intf_pool_t_is_holding_2 false)
 (global boolean intf_pool_t_is_holding_3 false)
-(global vehicle intf_pool_t_vehicle_0 NONE) ;; to get current vehicle doing the thing.
-(global vehicle intf_pool_t_vehicle_1 NONE)
-(global vehicle intf_pool_t_vehicle_2 NONE)
-(global vehicle intf_pool_t_vehicle_3 NONE)
 (global short intf_pool_t_drop_mrkr_0 -1) ;; marker to use when dropping.
 (global short intf_pool_t_drop_mrkr_1 -1)
 (global short intf_pool_t_drop_mrkr_2 -1)
@@ -897,29 +917,6 @@
 	(set intf_pool_pod_14 NONE)
 )
 
-(script static short (osa_pool_get_thread_by_squad (ai squad))
-    (cond 
-        ((= intf_pl_t_veh_0 squad)
-            0
-        )
-        ((= intf_pl_t_veh_1 squad)
-            1
-        )
-        ((= intf_pl_t_veh_2 squad)
-            2
-        )
-        ((= intf_pl_t_veh_3 squad)
-            3
-        )
-        (TRUE
-            (begin 
-				(print "ERROR: Point set is being used")
-				-1
-			)
-        )
-    )
-)
-
 (script static short (osa_path_get_end (point_reference ps) (short point_var) (short idx)) ; constain 0-2
 	(cond 
 		((= idx 2)
@@ -1006,8 +1003,12 @@
     (unit_close (ai_vehicle_get ai_current_actor))
     (sleep_until 
         (begin 
-			(print "TRANSPORT 0 LOOP IDX == point:")
-			(inspect intf_pl_t_loop_0)
+			(if dbg_pool
+				(begin 
+					(print_if dbg_pool "TRANSPORT 0 LOOP IDX == point:")
+					(inspect intf_pl_t_loop_0)
+				)
+			)
 			(cond
 				((and (= intf_pl_t_loop_0 (osa_utils_decompress_short intf_pl_t_drop_a_0 intf_pool_t_cur_sel_0)) (> (osa_utils_decompress_short intf_pl_t_face_drop_a_0 intf_pool_t_cur_sel_0) 0))
 					(cs_fly_to_and_face (ai_point_set_get_point ps_pool_0 intf_pl_t_loop_0) (ai_point_set_get_point ps_pool_0 (osa_utils_decompress_short intf_pl_t_face_drop_a_0 intf_pool_t_cur_sel_0)) 1)
@@ -1038,10 +1039,10 @@
 					(osa_ds_unload_dropship (ai_vehicle_get ai_current_actor) intf_pl_t_drop_side_b_0)
 				)
             )
-            (if (= intf_pl_t_loop_0 (osa_utils_decompress_short intf_pl_t_hold_at_0 intf_pool_t_cur_sel_0))
+            (if (and (= intf_pl_t_loop_0 (osa_utils_decompress_short intf_pl_t_hold_at_0 intf_pool_t_cur_sel_0)) intf_pl_t_hold_en_0)
                 (set intf_pool_t_is_holding_0 TRUE) ; latch and hold the transport.
             )
-			(sleep_until (not intf_pool_t_is_holding_0) 5)
+			(sleep_until (begin (print_if dbg_pool "TRANSPORT 0 hold?") (not intf_pool_t_is_holding_0)) 5)
             (if intf_pl_t_clse_whn_mv_0 ; close when moving.
 				(unit_close (ai_vehicle_get ai_current_actor))
 			)
@@ -1090,8 +1091,12 @@
     (unit_close (ai_vehicle_get ai_current_actor))
     (sleep_until 
         (begin 
-			(print "TRANSPORT 1 LOOP IDX == point:")
-			(inspect intf_pl_t_loop_1)
+			(if dbg_pool
+				(begin 
+					(print_if dbg_pool "TRANSPORT 1 LOOP IDX == point:")
+					(inspect intf_pl_t_loop_1)
+				)
+			)
 			(cond
 				((and (= intf_pl_t_loop_1 (osa_utils_decompress_short intf_pl_t_drop_a_1 intf_pool_t_cur_sel_1)) (> (osa_utils_decompress_short intf_pl_t_face_drop_a_1 intf_pool_t_cur_sel_1) 0))
 					(cs_fly_to_and_face (ai_point_set_get_point ps_pool_1 intf_pl_t_loop_1) (ai_point_set_get_point ps_pool_1 (osa_utils_decompress_short intf_pl_t_face_drop_a_1 intf_pool_t_cur_sel_1)) 1)
@@ -1105,10 +1110,10 @@
 
 			)
 			(if (= intf_pl_t_loop_1 (osa_utils_decompress_short intf_pool_t_slow_1 intf_pool_t_cur_sel_1))
-				(cs_vehicle_speed 1.5)
+				(cs_vehicle_speed 0.5)
 			)
 			(if (= intf_pl_t_loop_1 (osa_utils_decompress_short intf_pool_t_fast_1 intf_pool_t_cur_sel_1))
-				(cs_vehicle_speed 1.1)
+				(cs_vehicle_speed 1.0)
 			)
             (if (= intf_pl_t_loop_1 (osa_utils_decompress_short intf_pl_t_drop_a_1 intf_pool_t_cur_sel_1))
 				(begin 
@@ -1122,10 +1127,10 @@
 					(osa_ds_unload_dropship (ai_vehicle_get ai_current_actor) intf_pl_t_drop_side_b_1)
 				)
             )
-            (if (= intf_pl_t_loop_1 (osa_utils_decompress_short intf_pl_t_hold_at_1 intf_pool_t_cur_sel_1))
+            (if (and (= intf_pl_t_loop_1 (osa_utils_decompress_short intf_pl_t_hold_at_1 intf_pool_t_cur_sel_1)) intf_pl_t_hold_en_1)
                 (set intf_pool_t_is_holding_1 TRUE) ; latch and hold the transport.
             )
-			(sleep_until (not intf_pool_t_is_holding_1) 5)
+			(sleep_until (begin (print_if dbg_pool "TRANSPORT 1 hold?") (not intf_pool_t_is_holding_1)) 5)
             (if intf_pl_t_clse_whn_mv_1 ; close when moving.
 				(unit_close (ai_vehicle_get ai_current_actor))
 			)
@@ -1174,8 +1179,12 @@
     (unit_close (ai_vehicle_get ai_current_actor))
     (sleep_until 
         (begin 
-			(print "TRANSPORT 2 LOOP IDX == point:")
-			(inspect intf_pl_t_loop_2)
+			(if dbg_pool
+				(begin 
+					(print_if dbg_pool "TRANSPORT 2 LOOP IDX == point:")
+					(inspect intf_pl_t_loop_2)
+				)
+			)
 			(cond
 				((and (= intf_pl_t_loop_2 (osa_utils_decompress_short intf_pl_t_drop_a_2 intf_pool_t_cur_sel_2)) (> (osa_utils_decompress_short intf_pl_t_face_drop_a_2 intf_pool_t_cur_sel_2) 0))
 					(cs_fly_to_and_face (ai_point_set_get_point ps_pool_2 intf_pl_t_loop_2) (ai_point_set_get_point ps_pool_2 (osa_utils_decompress_short intf_pl_t_face_drop_a_2 intf_pool_t_cur_sel_2)) 1)
@@ -1189,10 +1198,10 @@
 
 			)
 			(if (= intf_pl_t_loop_2 (osa_utils_decompress_short intf_pool_t_slow_2 intf_pool_t_cur_sel_2))
-				(cs_vehicle_speed 2.5)
+				(cs_vehicle_speed 0.5)
 			)
 			(if (= intf_pl_t_loop_2 (osa_utils_decompress_short intf_pool_t_fast_2 intf_pool_t_cur_sel_2))
-				(cs_vehicle_speed 1.2)
+				(cs_vehicle_speed 1.0)
 			)
             (if (= intf_pl_t_loop_2 (osa_utils_decompress_short intf_pl_t_drop_a_2 intf_pool_t_cur_sel_2))
 				(begin 
@@ -1206,10 +1215,10 @@
 					(osa_ds_unload_dropship (ai_vehicle_get ai_current_actor) intf_pl_t_drop_side_b_2)
 				)
             )
-            (if (= intf_pl_t_loop_2 (osa_utils_decompress_short intf_pl_t_hold_at_2 intf_pool_t_cur_sel_2))
+            (if (and (= intf_pl_t_loop_2 (osa_utils_decompress_short intf_pl_t_hold_at_2 intf_pool_t_cur_sel_2)) intf_pl_t_hold_en_2)
                 (set intf_pool_t_is_holding_2 TRUE) ; latch and hold the transport.
             )
-			(sleep_until (not intf_pool_t_is_holding_2) 5)
+			(sleep_until (begin (print_if dbg_pool "TRANSPORT 2 hold?") (not intf_pool_t_is_holding_2)) 5)
             (if intf_pl_t_clse_whn_mv_2 ; close when moving.
 				(unit_close (ai_vehicle_get ai_current_actor))
 			)
@@ -1258,8 +1267,12 @@
     (unit_close (ai_vehicle_get ai_current_actor))
     (sleep_until 
         (begin 
-			(print "TRANSPORT 3 LOOP IDX == point:")
-			(inspect intf_pl_t_loop_3)
+			(if dbg_pool
+				(begin 
+					(print_if dbg_pool "TRANSPORT 3 LOOP IDX == point:")
+					(inspect intf_pl_t_loop_3)
+				)
+			)
 			(cond
 				((and (= intf_pl_t_loop_3 (osa_utils_decompress_short intf_pl_t_drop_a_3 intf_pool_t_cur_sel_3)) (> (osa_utils_decompress_short intf_pl_t_face_drop_a_3 intf_pool_t_cur_sel_3) 0))
 					(cs_fly_to_and_face (ai_point_set_get_point ps_pool_3 intf_pl_t_loop_3) (ai_point_set_get_point ps_pool_3 (osa_utils_decompress_short intf_pl_t_face_drop_a_3 intf_pool_t_cur_sel_3)) 1)
@@ -1273,10 +1286,10 @@
 
 			)
 			(if (= intf_pl_t_loop_3 (osa_utils_decompress_short intf_pool_t_slow_3 intf_pool_t_cur_sel_3))
-				(cs_vehicle_speed 3.5)
+				(cs_vehicle_speed 0.5)
 			)
 			(if (= intf_pl_t_loop_3 (osa_utils_decompress_short intf_pool_t_fast_3 intf_pool_t_cur_sel_3))
-				(cs_vehicle_speed 1.3)
+				(cs_vehicle_speed 1.0)
 			)
             (if (= intf_pl_t_loop_3 (osa_utils_decompress_short intf_pl_t_drop_a_3 intf_pool_t_cur_sel_3))
 				(begin 
@@ -1290,10 +1303,10 @@
 					(osa_ds_unload_dropship (ai_vehicle_get ai_current_actor) intf_pl_t_drop_side_b_3)
 				)
             )
-            (if (= intf_pl_t_loop_3 (osa_utils_decompress_short intf_pl_t_hold_at_3 intf_pool_t_cur_sel_3))
+            (if (and (= intf_pl_t_loop_3 (osa_utils_decompress_short intf_pl_t_hold_at_3 intf_pool_t_cur_sel_3)) intf_pl_t_hold_en_3)
                 (set intf_pool_t_is_holding_3 TRUE) ; latch and hold the transport.
             )
-			(sleep_until (not intf_pool_t_is_holding_3) 5)
+			(sleep_until (begin (print_if dbg_pool "TRANSPORT 3 hold?") (not intf_pool_t_is_holding_3)) 5)
             (if intf_pl_t_clse_whn_mv_3 ; close when moving.
 				(unit_close (ai_vehicle_get ai_current_actor))
 			)
