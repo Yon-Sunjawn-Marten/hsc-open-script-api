@@ -27,14 +27,24 @@
 
 (script static void (intf_utils_callout_object_p (object thing) (short type))
 	(sound_impulse_start sfx_blip NONE 1) ; sfx_blip is a global somewhere..
-	(chud_track_object_for_player_with_priority (player_in_game_get 0) thing type)
-	(chud_track_object_for_player_with_priority (player_in_game_get 1) thing type)
-	(chud_track_object_for_player_with_priority (player_in_game_get 2) thing type)
-	(chud_track_object_for_player_with_priority (player_in_game_get 3) thing type)
-	(chud_track_object_for_player_with_priority (player_in_game_get 4) thing type)
-	(chud_track_object_for_player_with_priority (player_in_game_get 5) thing type)
-	(chud_track_object_for_player_with_priority (player_in_game_get 6) thing type)
-	(chud_track_object_for_player_with_priority (player_in_game_get 7) thing type)
+	
+	(chud_track_object_for_player_with_priority (human_player_in_game_get 0) thing type)
+	(chud_track_object_for_player_with_priority (human_player_in_game_get 1) thing type)
+	(chud_track_object_for_player_with_priority (human_player_in_game_get 2) thing type)
+	(chud_track_object_for_player_with_priority (human_player_in_game_get 3) thing type)
+	(chud_track_object_for_player_with_priority (human_player_in_game_get 4) thing type)
+	(chud_track_object_for_player_with_priority (human_player_in_game_get 5) thing type)
+	(chud_track_object_for_player_with_priority (human_player_in_game_get 6) thing type)
+	(chud_track_object_for_player_with_priority (human_player_in_game_get 7) thing type)
+	; Elites get the opposite marker :)
+	(chud_track_object_for_player_with_priority (elite_player_in_game_get 0) thing (osa_utils_get_opposite_type type))
+	(chud_track_object_for_player_with_priority (elite_player_in_game_get 1) thing (osa_utils_get_opposite_type type))
+	(chud_track_object_for_player_with_priority (elite_player_in_game_get 2) thing (osa_utils_get_opposite_type type))
+	(chud_track_object_for_player_with_priority (elite_player_in_game_get 3) thing (osa_utils_get_opposite_type type))
+	(chud_track_object_for_player_with_priority (elite_player_in_game_get 4) thing (osa_utils_get_opposite_type type))
+	(chud_track_object_for_player_with_priority (elite_player_in_game_get 5) thing (osa_utils_get_opposite_type type))
+	(chud_track_object_for_player_with_priority (elite_player_in_game_get 6) thing (osa_utils_get_opposite_type type))
+	(chud_track_object_for_player_with_priority (elite_player_in_game_get 7) thing (osa_utils_get_opposite_type type))
 	; (sleep time) -- this is a blocking statement. and this script gets indirectly called from command_scripts
 	; why not just leave it on and simplify the damn scripts?
 	; turning it OFF is why this script got complicated.
@@ -171,7 +181,7 @@
 			9
 		)
 		((= name "defend a")
-			0
+			10
 		)
 		((= name "defend b")
 			11
@@ -212,6 +222,79 @@
 	)
 )
 
+(script static long (osa_utils_get_opposite_type (short index))
+	(cond
+		((= index 0)
+			1
+		)
+		((= index 1)
+			0
+		)
+		((= index 2)
+			0
+		)
+		((= index 3)
+			3
+		)
+		((= index 4)
+			14
+		)
+		((= index 5)
+			15
+		)
+		((= index 6)
+			6
+		)
+		((= index 7)
+			10
+		)
+		((= index 8)
+			11
+		)
+		((= index 9)
+			12
+		)
+		((= index 10)
+			7
+		)
+		((= index 11)
+			8
+		)
+		((= index 12)
+			9
+		)
+		((= index 13)
+			13
+		)
+		((= index 14)
+			4
+		)
+		((= index 15)
+			5
+		)
+		((= index 17)
+			17
+		)
+		((= index 18)
+			18
+		)
+		((= index 19)
+			19
+		)
+		((= index 20)
+			20
+		)
+		((= index 21)
+			21
+		)
+		((= index 22) ;; squad returns enemy for elites.
+			15
+		)
+		(TRUE
+			6
+		)
+	)
+)
 
 (script static boolean osa_utils_players_not_respawning
 	; This script returns true if the players are:

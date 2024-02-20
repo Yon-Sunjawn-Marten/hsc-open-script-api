@@ -45,8 +45,24 @@
 (global ai intf_sq_ff_remain NONE) ; The remainders squad that survivors get piled into after each wave
 
 (global ai intf_sq_ff_bonus NONE) ; bonus squad.
+
+; phantom squad definitions 
+(global ai intf_sq_phantom_01 NONE)
+(global ai intf_sq_phantom_02 NONE)
+(global ai intf_sq_phantom_03 NONE)
+(global ai intf_sq_phantom_bonus NONE)
+(global boolean intf_t_bonus_random TRUE)
+
+
+; define how the phantoms are loaded. Use the corresponding unload for the transport pool.
+(global string intf_drop_side_01 "dual")
+(global string intf_drop_side_02 "dual")
+(global string intf_drop_side_03 "dual")
 ;; ---  OUTPUT VARS        ---
 
+(global vehicle intf_sq_ph_1_current NONE)
+(global vehicle intf_sq_ph_2_current NONE)
+(global vehicle intf_sq_ph_3_current NONE)
 
 ; ======== Interfacing Scripts ========
 ; reserved means that another script uses it if added. You can still use it.
@@ -82,7 +98,10 @@
 		(begin 
 			(survival_mode_set_elite_license_plate 37 29 sur_game_name sur_cov_gen_desc elite_icon)
 			(survival_mode_set_spartan_license_plate 37 28 sur_game_name sur_unsc_gen_desc spartan_icon)
-
+			(set s_sur_loader_loop_max (ai_squad_group_get_squad_count intf_gr_ff_waves))
+			(set osa_phm_idx_01 (intf_pool_get_thread_from_sq intf_sq_phantom_01))
+			(set osa_phm_idx_02 (intf_pool_get_thread_from_sq intf_sq_phantom_02))
+			(set osa_phm_idx_03 (intf_pool_get_thread_from_sq intf_sq_phantom_03))
 			(wake osa_ff_main_loop)
 		)
 		(print "warzone checksum failed, module will not load.")
@@ -118,11 +137,10 @@
 	(print_if dbg_ff "**vehicle cleanup**")
 )
 (script stub void intf_plugin_ff_goal_custom_0
-    ;; claimed by generators_goal.hsc -- use custom 1 to have both yours and that.
     ;; wake monitoring script
     ;; (set b_survival_game_end_condition 1)
     (print_if dbg_ff "intf_plugin_ff_goal_custom_0")
-)
+);; claimed by generators_goal.hsc -- use custom 1 to have both yours and that.
 (script stub void intf_plugin_ff_goal_custom_1
     ;; (set b_survival_game_end_condition 1)
     ;; wake monitoring script
@@ -224,42 +242,27 @@
 (global short k_sur_bonus_timer 150)	; Delay following every bonus round
 (global short k_sur_wave_timeout 0)		; Not used
 
-; What sort of dropship to use
-; 0 - No dropships (overrides variant settings)
-; 1 - Phantoms
-; 2 - Spirits
 (global boolean s_sur_dropship_force_on false)
-(global boolean s_sur_loader_loop_done true)
-
-; phantom squad definitions 
-(global ai ai_sur_phantom_01 NONE)
-(global ai ai_sur_phantom_02 NONE)
-(global ai ai_sur_phantom_03 NONE)
-(global ai ai_sur_phantom_04 NONE)
-(global ai ai_sur_bonus_phantom NONE)
-
-; define how the phantoms are loaded 
-(global string s_sur_drop_side_01 "dual")
-(global string s_sur_drop_side_02 "dual")
-(global string s_sur_drop_side_03 "dual")
-(global string s_sur_drop_side_04 "dual")
-(global string s_sur_drop_side_bonus "dual")
+(global short s_sur_loader_loop_idx 0)
+(global boolean s_sur_loader_loop_done false)
+(global boolean s_sur_loader_spawn_done false)
+(global short s_sur_loader_loop_max 20)
+(global ai s_sur_ai_load_squad NONE)
 
 ; dropship spawn logic controls. Actually applies to spirits too
 (global boolean b_phantom_spawn TRUE)
 (global short b_phantom_spawn_count 0)
+(global short b_wave_spawn_count 0)
+(global short osa_phm_idx_01 0)
+(global short osa_phm_idx_02 0)
+(global short osa_phm_idx_03 0)
 
 ; The number of waves completed NOT COUNTING BONUS WAVE
 ; Used to determine when the game should end due to completion
 (global short s_survival_wave_complete_count 0)
 
-(global boolean idv_haz_drop_spawn TRUE)
-(global short   idv_haz_drop_limit 1) ; set the max number of individual drop pods at any one time 
-(global short   idv_haz_drop_count 0)
 
 ;==================================== Script Settings ====================================
-
-(global short opt_sur_resupply_limit 1) ; set the max number of resupply pods at any one time 
 
 ;=============================================================================================================================
 ;============================================ SURVIVAL CONSTANTS =============================================================
@@ -353,9 +356,9 @@
 	(event_intro)
 
 	; wake secondary scripts
-	(wake survival_bonus_round_end) ;; watches for end and closes bonus round.
+	; (wake survival_bonus_round_end) ;; watches for end and closes bonus round.
 	(wake survival_end_game) ;; watches for endgame.
-	(wake survival_bonus_round_dropship) ;; continuously watches for available dropship to spawn bonus.
+	; (wake survival_bonus_round_dropship) ;; continuously watches for available dropship to spawn bonus.
 	(wake survival_score_attack) ; -> osa_utils.hsc
 	(wake osa_automatic_announcer) ; -> osa_firefight_incident
 	
@@ -432,7 +435,70 @@ The jurisdiction of this script ends after the bonus wave is complete.
 			; Advance the wave
 			(survival_mode_begin_new_wave)
 			; At this point, the current wave is SET UP AND READY TO SPAWN.
-			(survival_wave_spawn) ; Blocks while running the wave.
+			(print "start new wave spawn")
+			; (ai_erase intf_gr_ff_waves)
+			
+			(set s_survival_state_wave 1)
+			(wake survival_garbage_collector)
+			(sleep_until 
+				(begin 
+					(print "Can spawn dropship waves. How many squads?")
+					(inspect b_wave_spawn_count)
+					(print "wave id:")
+					(inspect (survival_mode_get_wave_squad))
+					(set b_wave_spawn_count (intf_director_max_squads_of_four OSA_DIR_SIDE_ELITE))
+					(> b_wave_spawn_count 0)
+				)
+			)
+			; If this is a dropship wave, handle that side of things
+			(if (wave_dropship_enabled) (survival_dropship_spawner))
+			(wake survival_wave_spawn) ; this was made parallel because the stack overflowed.
+			(wake survival_wave_load_dropships)
+			(sleep_until 
+				s_sur_loader_loop_done
+			) ; sleep to let phantoms spawn.
+			(set s_sur_loader_loop_done false)
+			(print_if dbg_ff "Load hazards if applicable.")
+	
+	
+			(if (> (ai_living_count intf_sq_phantom_01) 0)
+				(intf_plugin_ff_hazard_spawn_0 intf_sq_ph_1_current)
+			)
+			
+			(if (> (ai_living_count intf_sq_phantom_02) 0)
+				(intf_plugin_ff_hazard_spawn_0 intf_sq_ph_2_current)
+			)
+			
+			(if (> (ai_living_count intf_sq_phantom_03) 0)
+				(intf_plugin_ff_hazard_spawn_0 intf_sq_ph_3_current)
+			)
+			; Sleep until dropships have dropped off their squads
+			(sleep_until 
+				(begin 
+					(print_if dbg_ff "wait for phantoms to exit scene.")
+					(= (+ (ai_living_count intf_sq_phantom_01) (ai_living_count intf_sq_phantom_02) (ai_living_count intf_sq_phantom_03)) 0)
+				)
+			)
+			
+			; Sleep until wave end conditions are met
+			(survival_wave_end_conditions)
+			
+			; Migrate remaining AI into a unique squad and squad group 
+			(ai_migrate_persistent intf_gr_ff_waves intf_sq_ff_remain)
+			
+			; End wave
+			(survival_mode_end_wave)
+			(set s_survival_state_wave 2)
+				
+			; Sleep set amount of time [unless this is the last wave] 
+			(if 
+				(and
+					(< (survival_mode_wave_get) k_sur_wave_per_round_limit)
+					(< s_survival_wave_complete_count (- (survival_mode_get_set_count) 1))
+				)
+				(sleep k_sur_wave_timer)
+			)
+
 			; At this point the wave has spawned and been defeated.
 			
 			; Increment the wave complete count for game over condition
@@ -487,7 +553,7 @@ The jurisdiction of this script ends after the bonus wave is complete.
 	
 	; Bonus wave
 	(sleep k_sur_bonus_timer)
-	(survival_bonus_round)
+	; (survival_bonus_round)
 	
 	; Kill this loop if we're past the end condition count
 	; Prevents more loop business from happening
@@ -508,81 +574,32 @@ The jurisdiction of this script ends after the bonus wave is complete.
 
 
 ; Setup and spawn a wave, then babysit it until it ends
-(script static void survival_wave_spawn
-	(set s_survival_state_wave 1)
+(script continuous survival_wave_spawn
+	(sleep_forever)
+	(set s_sur_loader_spawn_done false)
 	(print_if dbg_ff "spawn wave...")
-	
-	(wake survival_garbage_collector)
-
-	; If this is a dropship wave, handle that side of things
-	(if (wave_dropship_enabled) (survival_dropship_spawner))
-	
-	; Place the wave template, in limbo if dropships are enabled
-	(if (> (intf_director_max_squads_of_four OSA_DIR_SIDE_ELITE) 0)
-		(begin 
-			(print_if dbg_ff "Can spawn dropship waves")
-			(if (wave_dropship_enabled)
-				(ai_place_wave_in_limbo (survival_mode_get_wave_squad) intf_gr_ff_waves (intf_director_max_squads_of_four OSA_DIR_SIDE_ELITE))
-				(ai_place_wave (survival_mode_get_wave_squad) intf_gr_ff_waves (intf_director_max_squads_of_four OSA_DIR_SIDE_ELITE))
-			)
-		); else begin
-		(begin 
-			(print "OUT OF WAVE SQUADMATES")
-		)
+	(if (wave_dropship_enabled)
+		(ai_place_wave_in_limbo (survival_mode_get_wave_squad) intf_gr_ff_waves b_wave_spawn_count)
+		(ai_place_wave (survival_mode_get_wave_squad) intf_gr_ff_waves b_wave_spawn_count)
 	)
-	
 	(sleep 1)
-	; Load the dropships as appropriate
-	(set s_sur_loader_loop_done false)
-	(if (wave_dropship_enabled) (wake survival_dropship_loader_loop))
-	(sleep_until s_sur_loader_loop_done 1)
-	
-	(intf_pool_get_transport_running_script ai_sur_phantom_01)
-	(if (> (object_get_health intf_pool_t_running_export) 0)
-		(intf_plugin_ff_hazard_spawn_0 intf_pool_t_running_export)
-	)
-	
-	(intf_pool_get_transport_running_script ai_sur_phantom_02)
-	(if (> (object_get_health intf_pool_t_running_export) 0)
-		(intf_plugin_ff_hazard_spawn_0 intf_pool_t_running_export)
-	)
-	
-	(intf_pool_get_transport_running_script ai_sur_phantom_03)
-	(if (> (object_get_health intf_pool_t_running_export) 0)
-		(intf_plugin_ff_hazard_spawn_0 intf_pool_t_running_export)
-	)
-	
-	(intf_pool_get_transport_running_script ai_sur_phantom_04)
-	(if (> (object_get_health intf_pool_t_running_export) 0)
-		(intf_plugin_ff_hazard_spawn_0 intf_pool_t_running_export)
-	)
-	
-	; Sleep until dropships have dropped off their squads
-	(sleep_until (= (+ (ai_living_count ai_sur_phantom_01) (ai_living_count ai_sur_phantom_02) (ai_living_count ai_sur_phantom_03) (ai_living_count ai_sur_phantom_04)) 0))
-
-	
-	; Sleep until wave end conditions are met
-	(survival_wave_end_conditions)
-	
-	; Migrate remaining AI into a unique squad and squad group 
-	(ai_migrate_persistent intf_gr_ff_waves intf_sq_ff_remain)
-	
-	; End wave
-	(survival_mode_end_wave)
-	(set s_survival_state_wave 2)
-		
-	; Sleep set amount of time [unless this is the last wave] 
-	(if 
-		(and
-			(< (survival_mode_wave_get) k_sur_wave_per_round_limit)
-			(< s_survival_wave_complete_count (- (survival_mode_get_set_count) 1))
-		)
-		(sleep k_sur_wave_timer)
-	)
-	
-	
+	(print_if dbg_ff "Wave spawn complete!")
+	(set s_sur_loader_spawn_done true)
 	
 )
+
+(script continuous survival_wave_load_dropships
+	(sleep_forever)
+	(print_if dbg_ff "Load dropships.")
+	; Load the dropships as appropriate
+	(sleep_until s_sur_loader_spawn_done 1)
+	(if (wave_dropship_enabled)
+		(survival_dropship_loader_loop)
+	 	(set s_sur_loader_loop_done true)
+	)
+	(sleep 1)
+)
+
 ; === wave end parameters =====================================================
 (script static short survival_wave_living_count
 	(+ 
@@ -593,10 +610,12 @@ The jurisdiction of this script ends after the bonus wave is complete.
 
 (script static void survival_wave_end_conditions
 	; clean out the spawn rooms when there are less than 10 AI remaining 
+	(print "wave end conditions")
 	(sleep_until (< (survival_wave_living_count) 7))
-	(intf_plugin_ff_kill_volumes_on)
-	(ai_survival_cleanup intf_gr_ff_waves TRUE TRUE)
+	(print_if dbg_ff "wave end. start cleanup")
+	(ai_survival_cleanup intf_gr_ff_waves TRUE TRUE) ;; detect ai stuck in limbo
 	(ai_survival_cleanup intf_sq_ff_remain TRUE TRUE)
+	(intf_plugin_ff_kill_volumes_on)
 
 	(cond
 
@@ -665,17 +684,6 @@ The jurisdiction of this script ends after the bonus wave is complete.
 	(ai_survival_cleanup intf_gr_ff_waves FALSE FALSE)
 	(ai_survival_cleanup intf_sq_ff_remain FALSE FALSE)
 
-	; sleep until all phantoms are out of the world 
-	; (sleep_until
-	; 	(if (< (object_get_health ) 0))
-	; 	(intf_pool_get_transport_running_script ai_sur_phantom_01)	
-	; 	(and
-			
-	; 		(< (object_get_health (intf_pool_get_transport_running_script ai_sur_phantom_02)) 0)
-	; 		(< (object_get_health (intf_pool_get_transport_running_script ai_sur_phantom_03)) 0)
-	; 		(< (object_get_health (intf_pool_get_transport_running_script ai_sur_phantom_04)) 0)
-	; 	)
-	; )
 )
 ; --- wave end parameters ---------------------------------------------------==
 
@@ -688,7 +696,6 @@ The jurisdiction of this script ends after the bonus wave is complete.
 (global boolean b_sur_bonus_round_running FALSE)
 (global boolean b_sur_bonus_end FALSE)
 (global boolean b_sur_bonus_spawn TRUE)
-(global boolean b_sur_bonus_refilling FALSE)
 
 (global long l_sur_pre_bonus_points 0)
 (global long l_sur_post_bonus_points 0)
@@ -702,239 +709,259 @@ The jurisdiction of this script ends after the bonus wave is complete.
 (global short k_survival_bonus_timer (* 30 60 1))
 
 
-(script static void survival_bonus_round
-	(print_if dbg_ff "** start bonus round **")
+; (script static void survival_bonus_round
+; 	(print_if dbg_ff "** start bonus round **")
 	
-	; mark survival mode as "running" 
-	(set b_sur_bonus_round_running TRUE)
-	(set b_sur_bonus_end FALSE)
+; 	; mark survival mode as "running" 
+; 	(set b_sur_bonus_round_running TRUE)
+; 	(set b_sur_bonus_end FALSE)
 
-	; sum up the total points before the BONUS ROUND begins 
-	(set l_sur_pre_bonus_points (survival_total_score))
+; 	; sum up the total points before the BONUS ROUND begins 
+; 	(set l_sur_pre_bonus_points (survival_total_score))
 	
-	; mark as the start of bonus round
-	(survival_mode_begin_new_wave)
+; 	; mark as the start of bonus round
+; 	(survival_mode_begin_new_wave)
 	
-	; Get the bonus round duration
-	(set k_survival_bonus_timer (* (survival_mode_get_current_wave_time_limit) 30))
+; 	; Get the bonus round duration
+; 	(set k_survival_bonus_timer (* (survival_mode_get_current_wave_time_limit) 30))
 	
-	; Display bonus round timer
-	(chud_bonus_round_set_timer (survival_mode_get_current_wave_time_limit))
-	(chud_bonus_round_show_timer true)
+; 	; Display bonus round timer
+; 	(chud_bonus_round_set_timer (survival_mode_get_current_wave_time_limit))
+; 	(chud_bonus_round_show_timer true)
 	
-	;tysongr - 54505: Respawn players before the bonus round
-	(survival_mode_respawn_dead_players)
+; 	;tysongr - 54505: Respawn players before the bonus round
+; 	(survival_mode_respawn_dead_players)
 			
-	; announce BONUS ROUND
-	(event_survival_bonus_round)
-	(sleep 90)
+; 	; announce BONUS ROUND
+; 	(event_survival_bonus_round)
+; 	(sleep 90)
 	
-	; spawn in phantom if needed 
-	(if (wave_dropship_enabled) 
-		(begin
-			(ai_place ai_sur_bonus_phantom)
-			(ai_squad_enumerate_immigrants ai_sur_bonus_phantom true)
-			(sleep 1)
+; 	; spawn in phantom if needed 
+; 	(if (wave_dropship_enabled) 
+; 		(begin
+; 			(if intf_t_bonus_random
+; 				(begin 
+; 					(print_if dbg_ff "Pick a random phantom to be the bonus :>")
+; 					(sleep_until 
+; 						(begin 
+; 							(begin_random_count 1 
+; 								(set intf_sq_phantom_bonus intf_sq_phantom_01)
+; 								(set intf_sq_phantom_bonus intf_sq_phantom_02)
+; 								(set intf_sq_phantom_bonus intf_sq_phantom_03)
+; 							)
+; 							(!= NONE intf_sq_phantom_bonus)
+; 						)
+; 						1
+; 					)
+; 				)
+; 			) ; else use the preset phantom.
+; 			; Before it spawns, let's enable the hold mechanic.
+; 			(intf_pool_set_hold_en intf_sq_phantom_bonus true)
+; 			(ai_place intf_sq_phantom_bonus)
+; 			(ai_squad_enumerate_immigrants intf_sq_phantom_bonus true)
+; 			(sleep 1)
 			
-			; My sauce was weak. This makes it strong.
-			(f_survival_bonus_spawner true)
-			(f_survival_bonus_spawner true)
-			(f_survival_bonus_spawner true)
-			(f_survival_bonus_spawner true)
-		)
-	)
+; 			; My sauce was weak. This makes it strong.
+; 			(f_survival_bonus_spawner true)
+; 			(f_survival_bonus_spawner true)
+; 			(f_survival_bonus_spawner true)
+; 			(f_survival_bonus_spawner true)
+; 		)
+; 	)
 	
-	; Start the bonus round end condition timer
-	(set b_survival_bonus_timer_begin TRUE)
+; 	; Start the bonus round end condition timer
+; 	(set b_survival_bonus_timer_begin TRUE)
 	
-	; re-populate the space with a single squad 
-	(sleep_until 
-		(begin
-			; Sleep until the number of AI drops below the bonus limit 
-			(sleep_until	
-				(or
-					b_sur_bonus_end
-					(<= (survival_mode_bonus_living_count) k_sur_bonus_limit)
-					(osa_utils_players_dead)
-				)
-				1
-			)
+; 	; re-populate the space with a single squad 
+; 	(sleep_until 
+; 		(begin
+; 			; Sleep until the number of AI drops below the bonus limit 
+; 			(sleep_until	
+; 				(or
+; 					b_sur_bonus_end
+; 					(<= (survival_mode_bonus_living_count) k_sur_bonus_limit)
+; 					(osa_utils_players_dead)
+; 				)
+; 				1
+; 			)
 
-			; If the round isn't over...
-			(if	
-				(and
-					(not (osa_utils_players_dead))
-					(not b_sur_bonus_end)
-				)
-				(begin
-					(f_survival_bonus_spawner false)
-				)
-			)
+; 			; If the round isn't over...
+; 			(if	
+; 				(and
+; 					(not (osa_utils_players_dead))
+; 					(not b_sur_bonus_end)
+; 				)
+; 				(begin
+; 					(f_survival_bonus_spawner false)
+; 				)
+; 			)
 
-			; continue in this loop until the timer expires 
-			; OR all players are dead 
-			(or
-				b_sur_bonus_end
-				(osa_utils_players_dead)
-			)
-		)
-		1
-	)
+; 			; continue in this loop until the timer expires 
+; 			; OR all players are dead 
+; 			(or
+; 				b_sur_bonus_end
+; 				(osa_utils_players_dead)
+; 			)
+; 		)
+; 		1
+; 	)
 				
-	; kill all ai 
-	(ai_kill_no_statistics intf_gr_ff_waves)
-	(ai_kill_no_statistics intf_sq_ff_bonus)
-	(sleep 90)
+; 	; kill all ai 
+; 	(ai_kill_no_statistics intf_gr_ff_waves)
+; 	(ai_kill_no_statistics intf_sq_ff_bonus)
+; 	(sleep 90)
 
-	; announce bonus round over 
-	(event_survival_bonus_round_over)
+; 	; announce bonus round over 
+; 	(event_survival_bonus_round_over)
 
-	; respawn players 
-	(skull_enable skull_iron false)
-	(survival_mode_respawn_dead_players)
-	(sleep 30)
+; 	; respawn players 
+; 	(skull_enable skull_iron false)
+; 	(survival_mode_respawn_dead_players)
+; 	(sleep 30)
 	
-	; End the wave and set
-	(survival_mode_end_wave)
-	(survival_mode_end_set)
+; 	; End the wave and set
+; 	(survival_mode_end_wave)
+; 	(survival_mode_end_set)
 
-	; Increment the wave complete count for game over condition
-	(set s_survival_wave_complete_count (+ s_survival_wave_complete_count 1))
+; 	; Increment the wave complete count for game over condition
+; 	(set s_survival_wave_complete_count (+ s_survival_wave_complete_count 1))
 
-	; delay timer 
-	(sleep 120)
+; 	; delay timer 
+; 	(sleep 120)
 
-	; calculate the number of points scored during the bonus round 
-	(set l_sur_post_bonus_points (survival_total_score))
+; 	; calculate the number of points scored during the bonus round 
+; 	(set l_sur_post_bonus_points (survival_total_score))
 	
-	; clear timer 
-	(chud_bonus_round_set_timer 0)
-	(chud_bonus_round_show_timer FALSE)
-	(chud_bonus_round_start_timer FALSE)
+; 	; clear timer 
+; 	(chud_bonus_round_set_timer 0)
+; 	(chud_bonus_round_show_timer FALSE)
+; 	(chud_bonus_round_start_timer FALSE)
 
-	; reset parameters 
-	(set k_sur_bonus_squad_limit 6)
-	(intf_pool_unblock_transport ai_sur_bonus_phantom)
-	(set b_sur_bonus_refilling FALSE)
+; 	; reset parameters 
+; 	(set k_sur_bonus_squad_limit 6)
+; 	(intf_pool_unblock_transport intf_sq_phantom_bonus)
 	
-	; mark survival mode as "not-running" 
-	(set b_sur_bonus_round_running FALSE)
-)
+; 	; after bonus round. disable hold of current bonus phantom so it can be used during normal waves.
+; 	(intf_pool_set_hold_en intf_sq_phantom_bonus false)
+	
+; 	; mark survival mode as "not-running" 
+; 	(set b_sur_bonus_round_running FALSE)
+; )
 
 
-(script dormant survival_bonus_round_end
-	(sleep_until
-		(begin
-			(sleep_until b_survival_bonus_timer_begin 1)
-			(chud_bonus_round_start_timer TRUE)
-			(sleep_until 
-				(osa_utils_players_dead) 
-				1 
-				k_survival_bonus_timer
-			)
+; (script dormant survival_bonus_round_end
+; 	(sleep_until
+; 		(begin
+; 			(sleep_until b_survival_bonus_timer_begin 1)
+; 			(chud_bonus_round_start_timer TRUE)
+; 			(sleep_until 
+; 				(osa_utils_players_dead) 
+; 				1 
+; 				k_survival_bonus_timer
+; 			)
 			
-			; turn off bonus round 
-			(set b_sur_bonus_end TRUE)
+; 			; turn off bonus round 
+; 			(set b_sur_bonus_end TRUE)
 		
-			; if all players are dead reset the timer 
-			(if (osa_utils_players_dead)
-				(begin
-					(chud_bonus_round_start_timer FALSE)
-					(chud_bonus_round_set_timer 0)
-				)
-			)
+; 			; if all players are dead reset the timer 
+; 			(if (osa_utils_players_dead)
+; 				(begin
+; 					(chud_bonus_round_start_timer FALSE)
+; 					(chud_bonus_round_set_timer 0)
+; 				)
+; 			)
 				
-			(set b_survival_bonus_timer_begin FALSE)
+; 			(set b_survival_bonus_timer_begin FALSE)
 			
-			; Loop forever
-			b_survival_kill_threads
-		)
-		1
-	)
-)
+; 			; Loop forever
+; 			b_survival_kill_threads
+; 		)
+; 		1
+; 	)
+; )
 
 
 ;(global ai survival_bonus_last_squad none)
-(script static void (f_survival_bonus_spawner (boolean force_load))
-	(print_if dbg_ff "spawn bonus squad...")
+; (script static void (f_survival_bonus_spawner (boolean force_load))
+; 	(print_if dbg_ff "spawn bonus squad...")
 	
-	; Load them into the dropship if appropriate
-	(if
-		(or 
-			force_load
-			(and
-				(intf_pool_is_tranport_holding ai_sur_bonus_phantom)
-				(wave_dropship_enabled)
-				(= (random_range 0 2) 0)		
-			)
-		)
+; 	; Load them into the dropship if appropriate
+; 	(if
+; 		(or 
+; 			force_load
+; 			(and
+; 				(intf_pool_is_tranport_holding intf_sq_phantom_bonus)
+; 				(wave_dropship_enabled)
+; 				(= (random_range 0 2) 0)		
+; 			)
+; 		)
 		
-		; Spawn them in limbo and load them
-		(begin
-			; Place the squad
-			(ai_place_wave_in_limbo (survival_mode_get_wave_squad) intf_gr_ff_waves 1)
-			(sleep 1)
-			(intf_pool_get_transport_running_script ai_sur_bonus_phantom)
-			; Get the squad, and load it
-			(survival_attempt_load intf_pool_t_running_export s_sur_drop_side_bonus intf_gr_ff_waves FALSE)
-		)
+; 		; Spawn them in limbo and load them
+; 		(begin
+; 			; Place the squad
+; 			(ai_place_wave (survival_mode_get_wave_squad) intf_gr_ff_waves 1)
+; 			(sleep 1)
+; 			(intf_pool_get_transport_running_script intf_sq_phantom_bonus)
+; 			; Get the squad, and load it
+; 			(survival_attempt_load intf_pool_t_running_export intf_drop_side_bonus intf_gr_ff_waves FALSE)
+; 		)
 		
-		; Otherwise, spawn and migrate them
-		(begin
-			(ai_place_wave (survival_mode_get_wave_squad) intf_gr_ff_waves 1)
-			(sleep 1)
-			(ai_migrate_persistent intf_gr_ff_waves intf_sq_ff_bonus)
-		)
-	)
+; 		; Otherwise, spawn and migrate them
+; 		(begin
+; 			(ai_place_wave (survival_mode_get_wave_squad) intf_gr_ff_waves 1)
+; 			(sleep 1)
+; 			(ai_migrate_persistent intf_gr_ff_waves intf_sq_ff_bonus)
+; 		)
+; 	)
 	
-	; Bedlam?
+; 	; Bedlam?
 
-)
+; )
 
-(script dormant survival_bonus_round_dropship
-	(sleep_until
-		(begin
-			(sleep_until 
-				(or
-					(intf_pool_is_tranport_holding ai_sur_bonus_phantom) 
-					b_sur_bonus_end
-				)
-				5
-			)
-			(if (not b_sur_bonus_end)
-				(begin
-					(intf_pool_get_transport_running_script ai_sur_bonus_phantom)
-					(unit_open intf_pool_t_running_export)
-					(sleep_until 
-						(begin
-							; Empy the dropship. Is it a Phantom or a Spirit?
-							(osa_ds_unload_dropship intf_pool_t_running_export "any")
+; (script dormant survival_bonus_round_dropship
+; 	(sleep_until
+; 		(begin
+; 			(sleep_until 
+; 				(or
+; 					(intf_pool_is_tranport_holding intf_sq_phantom_bonus) 
+; 					b_sur_bonus_end
+; 				)
+; 				5
+; 			)
+; 			(if (not b_sur_bonus_end)
+; 				(begin
+; 					(intf_pool_get_thread_from_sq intf_sq_phantom_bonus)
+; 					(unit_open intf_pool_t_running_export)
+; 					(sleep_until 
+; 						(begin
+; 							; Empy the dropship. Is it a Phantom or a Spirit?
+; 							(osa_ds_unload_dropship intf_pool_t_running_export "any")
 
-							; Migrate them (after a short pause)
-							(sleep 1)
-							(ai_migrate_persistent intf_gr_ff_waves intf_sq_ff_bonus)
+; 							; Migrate them (after a short pause)
+; 							(sleep 1)
+; 							(ai_migrate_persistent intf_gr_ff_waves intf_sq_ff_bonus)
 							
-							; Loop until bonus round ends
-							b_sur_bonus_end
-						)
-						30
-					)
-					(unit_close intf_pool_t_running_export)
-				)
-			)
+; 							; Loop until bonus round ends
+; 							b_sur_bonus_end
+; 						)
+; 						30
+; 					)
+; 					(unit_close intf_pool_t_running_export)
+; 				)
+; 			)
 		
-			; Loop forever
-			false
-		)
-	)
-)
+; 			; Loop forever
+; 			false
+; 		)
+; 	)
+; )
 
 
 (script static short survival_mode_bonus_living_count
 	(+
 		(ai_living_count intf_gr_ff_waves)
 		(ai_living_count intf_sq_ff_bonus)
-		(ai_living_count ai_sur_bonus_phantom)
+		(ai_living_count intf_sq_phantom_bonus)
 	)
 )
 
@@ -989,7 +1016,7 @@ The jurisdiction of this script ends after the bonus wave is complete.
 
 	; Kill remaining survival threads 
 	(sleep_forever osa_ff_main_loop)
-	(sleep_forever survival_bonus_round_end)
+	; (sleep_forever survival_bonus_round_end)
 	
 	(sleep 120)
 
@@ -1059,24 +1086,71 @@ The jurisdiction of this script ends after the bonus wave is complete.
 
 ; randomly pick from the available phantoms 
 (script static void survival_dropship_spawner
-
+	; reset phantom spawn variables to initial conditions 
+	(set b_phantom_spawn TRUE)
+	(set b_phantom_spawn_count 0)
 	; spawn all phantoms 
 	(sleep_until
 		(begin
 			(begin_random
-				(if b_phantom_spawn		(f_survival_dropship_spawner ai_sur_phantom_01))
-				(if b_phantom_spawn		(f_survival_dropship_spawner ai_sur_phantom_02))
-				(if b_phantom_spawn		(f_survival_dropship_spawner ai_sur_phantom_03))
-				(if b_phantom_spawn		(f_survival_dropship_spawner ai_sur_phantom_04))
+				(if b_phantom_spawn		(f_survival_dropship_spawner intf_sq_phantom_01))
+				(if b_phantom_spawn		(f_survival_dropship_spawner intf_sq_phantom_02))
+				(if b_phantom_spawn		(f_survival_dropship_spawner intf_sq_phantom_03))
 			)
 			
 		(= b_phantom_spawn FALSE))
 	1)
-
-	; reset phantom spawn variables to initial conditions 
-	(set b_phantom_spawn TRUE)
-	(set b_phantom_spawn_count 0)
 	(sleep 30) ;; sleep 1 second so AI can engage with the cs_script.
+	(if (> (ai_living_count intf_sq_phantom_01) 0)
+		(begin 
+			(if (= 0 osa_phm_idx_01)
+				(set intf_sq_ph_1_current intf_pool_t_vehicle_0)
+			)
+			(if (= 1 osa_phm_idx_01)
+				(set intf_sq_ph_1_current intf_pool_t_vehicle_1)
+			)
+			(if (= 2 osa_phm_idx_01)
+				(set intf_sq_ph_1_current intf_pool_t_vehicle_2)
+			)
+			(if (= 3 osa_phm_idx_01)
+				(set intf_sq_ph_1_current intf_pool_t_vehicle_3)
+			)
+		)
+	)
+	
+	(if (> (ai_living_count intf_sq_phantom_02) 0)
+		(begin 
+			(if (= 0 osa_phm_idx_02)
+				(set intf_sq_ph_2_current intf_pool_t_vehicle_0)
+			)
+			(if (= 1 osa_phm_idx_02)
+				(set intf_sq_ph_2_current intf_pool_t_vehicle_1)
+			)
+			(if (= 2 osa_phm_idx_02)
+				(set intf_sq_ph_2_current intf_pool_t_vehicle_2)
+			)
+			(if (= 3 osa_phm_idx_02)
+				(set intf_sq_ph_2_current intf_pool_t_vehicle_3)
+			)
+		)
+	)
+	
+	(if (> (ai_living_count intf_sq_phantom_03) 0)
+		(begin 
+			(if (= 0 osa_phm_idx_03)
+				(set intf_sq_ph_3_current intf_pool_t_vehicle_0)
+			)
+			(if (= 1 osa_phm_idx_03)
+				(set intf_sq_ph_3_current intf_pool_t_vehicle_1)
+			)
+			(if (= 2 osa_phm_idx_03)
+				(set intf_sq_ph_3_current intf_pool_t_vehicle_2)
+			)
+			(if (= 3 osa_phm_idx_03)
+				(set intf_sq_ph_3_current intf_pool_t_vehicle_3)
+			)
+		)
+	)
 )
 
 
@@ -1108,62 +1182,27 @@ The jurisdiction of this script ends after the bonus wave is complete.
 (global boolean b_dropship_check_seats TRUE)
 (global short s_dropship_current 1)
 
-(script static ai (wave_squad_get (short index))
-	(if (<= index (ai_squad_group_get_squad_count intf_gr_ff_waves))
-		(ai_squad_group_get_squad intf_gr_ff_waves index)
-		none
-	)
-)
-
-(script static short (wave_squad_get_count (short index))
-	(if (<= index (ai_squad_group_get_squad_count intf_gr_ff_waves))
-		(ai_living_count (ai_squad_group_get_squad intf_gr_ff_waves index))
-		0
-	)
-)
-
-
-(script static boolean (survival_should_load_squad (ai squad))
-	(and
-		(> (ai_living_count squad) 0)
-		(not (ai_is_in_fireteam squad))
-	)
-)
-
-(script dormant survival_dropship_loader_loop
+(script static void survival_dropship_loader_loop
 	; For each squad, it if exists, load it
+	(set s_sur_loader_loop_done false)
 	(print_if dbg_ff "Wave Loader:")
-	; (if (< index (ai_squad_group_get_squad_count intf_gr_ff_waves))
-	; 	(begin 
-			
-	; 		(survival_dropship_loader_loop (+ index 1))
-	; 	)
-	; 	(print_if dbg_ff "Loader Loop Finished.")
-	; )
-	(if (survival_should_load_squad (wave_squad_get 0)) (f_survival_dropship_loader (wave_squad_get 0)))
-	(if (survival_should_load_squad (wave_squad_get 1)) (f_survival_dropship_loader (wave_squad_get 1)))
-	(if (survival_should_load_squad (wave_squad_get 2)) (f_survival_dropship_loader (wave_squad_get 2)))
-	(if (survival_should_load_squad (wave_squad_get 3)) (f_survival_dropship_loader (wave_squad_get 3)))
-	(if (survival_should_load_squad (wave_squad_get 4)) (f_survival_dropship_loader (wave_squad_get 4)))
-	(if (survival_should_load_squad (wave_squad_get 5)) (f_survival_dropship_loader (wave_squad_get 5)))
-	(if (survival_should_load_squad (wave_squad_get 6)) (f_survival_dropship_loader (wave_squad_get 6)))
-	(if (survival_should_load_squad (wave_squad_get 7)) (f_survival_dropship_loader (wave_squad_get 7)))
-	(if (survival_should_load_squad (wave_squad_get 8)) (f_survival_dropship_loader (wave_squad_get 8)))
-	(if (survival_should_load_squad (wave_squad_get 9)) (f_survival_dropship_loader (wave_squad_get 9)))
-	(if (survival_should_load_squad (wave_squad_get 10)) (f_survival_dropship_loader (wave_squad_get 10)))
-	(if (survival_should_load_squad (wave_squad_get 11)) (f_survival_dropship_loader (wave_squad_get 11)))
-	(if (survival_should_load_squad (wave_squad_get 12)) (f_survival_dropship_loader (wave_squad_get 12)))
-	(if (survival_should_load_squad (wave_squad_get 13)) (f_survival_dropship_loader (wave_squad_get 13)))
-	(if (survival_should_load_squad (wave_squad_get 14)) (f_survival_dropship_loader (wave_squad_get 14)))
-	(if (survival_should_load_squad (wave_squad_get 15)) (f_survival_dropship_loader (wave_squad_get 15)))
-	(if (survival_should_load_squad (wave_squad_get 16)) (f_survival_dropship_loader (wave_squad_get 16)))
-	(if (survival_should_load_squad (wave_squad_get 17)) (f_survival_dropship_loader (wave_squad_get 17)))
-	(if (survival_should_load_squad (wave_squad_get 18)) (f_survival_dropship_loader (wave_squad_get 18)))
-	(if (survival_should_load_squad (wave_squad_get 19)) (f_survival_dropship_loader (wave_squad_get 19)))
-	(if (survival_should_load_squad (wave_squad_get 20)) (f_survival_dropship_loader (wave_squad_get 20)))
-	
-	(print_if dbg_ff "Wave Loader finished")
+	(set s_sur_loader_loop_idx 0)
+	(sleep_until 
+		(begin 
+			(if dbg_ff
+				(inspect s_sur_loader_loop_idx)
+			)
+			(set s_sur_ai_load_squad (ai_squad_group_get_squad intf_gr_ff_waves s_sur_loader_loop_idx))
+			(if (> (ai_living_count s_sur_ai_load_squad) 0) 
+				(f_survival_dropship_loader s_sur_ai_load_squad)
+			)
+			(set s_sur_loader_loop_idx (+ s_sur_loader_loop_idx 1))
+			(>= s_sur_loader_loop_idx s_sur_loader_loop_max)
+		)
+		1
+	)
 	(set s_sur_loader_loop_done true)
+	(print_if dbg_ff "Wave Loader finished")
 )
 
 
@@ -1176,33 +1215,23 @@ The jurisdiction of this script ends after the bonus wave is complete.
 			(if (= s_dropship_current 1)
 				(begin 
 					(print_if dbg_ff "attempt to load dropship 1")
-					(intf_pool_get_transport_running_script ai_sur_phantom_01)
-					(survival_attempt_load intf_pool_t_running_export s_sur_drop_side_01 load_squad b_dropship_check_seats)
+					(survival_attempt_load intf_sq_ph_1_current intf_drop_side_01 load_squad b_dropship_check_seats)
 				)
 				
 			)
 			(if (= s_dropship_current 2)
 				(begin 
 					(print_if dbg_ff "attempt to load dropship 2")
-					(intf_pool_get_transport_running_script ai_sur_phantom_02)
-					(survival_attempt_load intf_pool_t_running_export s_sur_drop_side_02 load_squad b_dropship_check_seats)
+					(survival_attempt_load intf_sq_ph_2_current intf_drop_side_02 load_squad b_dropship_check_seats)
 				)
 			)
 			(if (= s_dropship_current 3)
 				(begin 
 					(print_if dbg_ff "attempt to load dropship 3")
-					(intf_pool_get_transport_running_script ai_sur_phantom_03)
-					(survival_attempt_load intf_pool_t_running_export s_sur_drop_side_03 load_squad b_dropship_check_seats)
+					(survival_attempt_load intf_sq_ph_3_current intf_drop_side_03 load_squad b_dropship_check_seats)
 				)
 			)
-			(if (= s_dropship_current 4)
-				(begin 
-					(print_if dbg_ff "attempt to load dropship 4")
-					(intf_pool_get_transport_running_script ai_sur_phantom_03)
-					(survival_attempt_load intf_pool_t_running_export s_sur_drop_side_04 load_squad b_dropship_check_seats)
-				)
-			)
-			(if (>= s_dropship_current 4)
+			(if (>= s_dropship_current 3)
 				(set s_dropship_current 1)
 				(set s_dropship_current (+ s_dropship_current 1))
 			)
@@ -1233,25 +1262,25 @@ The jurisdiction of this script ends after the bonus wave is complete.
 				(survival_set_hold_task load_squad)
 				; Take the AI out of limbo
 				(if test_seat
-					(f_survival_load_dropship dropship load_side load_squad)
-					(f_survival_load_dropship dropship "any" load_squad)
+					(begin 
+						(print_if dbg_ff "Load Dropship...")
+						(ai_exit_limbo load_squad)
+						(sleep 1)
+						(osa_ds_load_dropship dropship load_side load_squad NONE NONE)
+						(set b_dropship_loaded TRUE)
+					)
+					(begin 
+						(print_if dbg_ff "Load Dropship...")
+						(ai_exit_limbo load_squad)
+						(sleep 1)
+						(osa_ds_load_dropship dropship "any" load_squad NONE NONE)
+						(set b_dropship_loaded TRUE)
+					)
 				)
 			)
 			(set b_dropship_loaded TRUE)
 		)
 	)
-)
-
-(script static void	(f_survival_load_dropship
-								(vehicle dropship)
-								(string load_side)
-								(ai load_squad)
-				)
-	(print_if dbg_ff "Load Dropship...")
-	(ai_exit_limbo load_squad)
-	(sleep 1)
-	(osa_ds_load_dropship dropship load_side load_squad NONE NONE)
-	(set b_dropship_loaded TRUE)
 )
 
 

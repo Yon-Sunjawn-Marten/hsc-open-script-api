@@ -122,8 +122,8 @@
 		)
 		(TRUE
 			(begin 
-				(print "FAILED TO FIND SHIP TYPE. is the dropship valid?")
-				(inspect (!= NONE dropship))
+				(print "FAILED TO FIND SHIP TYPE. is the dropship none?:")
+				(inspect (= NONE dropship))
 				"NONE"
 			)
 		)
