@@ -389,6 +389,7 @@
 
 (global short OSA_DIR_SIDE_SPARTAN 0)
 (global short OSA_DIR_SIDE_ELITE 1)
+(global short OSA_DIR_SIDE_NONE 2)
 
 (global short OSA_DIR_TYPE_WARTHOG_CHAINGUN    0)
 (global short OSA_DIR_TYPE_WARTHOG_ROCKET      1)
@@ -864,7 +865,7 @@
                     (sleep 1) ; just in case they won't migrate immediately.
                     (intf_director_migrate_squad intf_migrate_dir_0 intf_migrate_dest_0) ; find a squad to migrate to.
                     (sleep 1) ; a cooldown period for kicks.
-                    (print_if dbg_dir "director auto migrate squad_0")
+                    (print "director auto migrate squad_0")
                     FALSE ; stay
                 )
                 TRUE; break
@@ -882,7 +883,7 @@
                     (sleep 1) ; just in case they won't migrate immediately.
                     (intf_director_migrate_squad intf_migrate_dir_1 intf_migrate_dest_1) ; find a squad to migrate to.
                     (sleep 1) ; a cooldown period for kicks.
-                    (print_if dbg_dir "director auto migrate squad_1")
+                    (print "director auto migrate squad_1")
                     FALSE ; stay
                 )
                 TRUE; break
@@ -900,7 +901,7 @@
                     (sleep 1) ; just in case they won't migrate immediately.
                     (intf_director_migrate_squad intf_migrate_dir_2 intf_migrate_dest_2) ; find a squad to migrate to.
                     (sleep 1) ; a cooldown period for kicks.
-                    (print_if dbg_dir "director auto migrate squad_2")
+                    (print "director auto migrate squad_2")
                     FALSE ; stay
                 )
                 TRUE; break
@@ -918,7 +919,7 @@
                     (sleep 1) ; just in case they won't migrate immediately.
                     (intf_director_migrate_squad intf_migrate_dir_3 intf_migrate_dest_3) ; find a squad to migrate to.
                     (sleep 1) ; a cooldown period for kicks.
-                    (print_if dbg_dir "director auto migrate squad_3")
+                    (print "director auto migrate squad_3")
                     FALSE ; stay
                 )
                 TRUE; break
@@ -936,7 +937,7 @@
                     (sleep 1) ; just in case they won't migrate immediately.
                     (intf_director_migrate_squad intf_migrate_dir_4 intf_migrate_dest_4) ; find a squad to migrate to.
                     (sleep 1) ; a cooldown period for kicks.
-                    (print_if dbg_dir "director auto migrate squad_4")
+                    (print "director auto migrate squad_4")
                     FALSE ; stay
                 )
                 TRUE; break
@@ -954,7 +955,7 @@
                     (sleep 1) ; just in case they won't migrate immediately.
                     (intf_director_migrate_squad intf_migrate_dir_5 intf_migrate_dest_5) ; find a squad to migrate to.
                     (sleep 1) ; a cooldown period for kicks.
-                    (print_if dbg_dir "director auto migrate squad_5")
+                    (print "director auto migrate squad_5")
                     FALSE ; stay
                 )
                 TRUE; break
@@ -972,7 +973,7 @@
                     (sleep 1) ; just in case they won't migrate immediately.
                     (intf_director_migrate_squad intf_migrate_dir_6 intf_migrate_dest_6) ; find a squad to migrate to.
                     (sleep 1) ; a cooldown period for kicks.
-                    (print_if dbg_dir "director auto migrate squad_6")
+                    (print "director auto migrate squad_6")
                     FALSE ; stay
                 )
                 TRUE; break
