@@ -81,16 +81,18 @@
 
 (global short k_surv_generator_cooldown 90)
 
+(global short intf_gen_generator_count (survival_mode_generator_count))
+
 ;; Access interfaces in firefight
 
-(script static void warzone_end_finalize_extension
+(script static void intf_plugin_ff_game_over_event
 	(if (= b_survival_game_end_condition 1)
 		(event_survival_spartans_win_gen)
 		(event_survival_elites_win_gen)
 	)
 )
 
-(script static boolean warzone_sudden_death_condition
+(script static boolean intf_plugin_ff_sudden_death_condition
 	(or
 		; Generator alive and closed?
 		(and
@@ -110,16 +112,16 @@
 	)
 )
 
-(script static void warzone_sudden_death_extension
+(script static void intf_plugin_ff_sudden_death_extension
 	; Lock the generators that exist
 	(device_set_power generator_switch0 0)
 	(device_set_power generator_switch1 0)
 	(device_set_power generator_switch2 0)
 )
 
-(script static void warzone_goal_custom_0
+(script static void intf_plugin_ff_goal_custom_0
 	(print "Generator Defense Addon Enabled!")
-	(if (> (survival_mode_generator_count) 0)
+	(if (> intf_gen_generator_count 0)
 		(wake osa_generator_defense)
 	)
 )
@@ -127,6 +129,7 @@
 
 (script dormant osa_generator_defense
 	(set b_sur_generator_defense_active true)
+	(print "Gen defense active")
 	
 	; Create the generator objects
 	(survival_mode_gd_spawn_generators)
@@ -520,7 +523,7 @@
 	; Random, or sequence?
 	(if (survival_mode_generator_random_spawn)
 		; Random spawns
-		(begin_random_count (survival_mode_generator_count)
+		(begin_random_count intf_gen_generator_count
 			; Generator 0
 			(begin
 				(object_create_anew generator0)
@@ -586,7 +589,7 @@
 		)
 		
 		; Sequential
-		(begin_count (survival_mode_generator_count)
+		(begin_count intf_gen_generator_count
 			; Generator 0
 			(begin
 				(object_create_anew generator0)
@@ -658,7 +661,7 @@
 	; Is the mode Defend All, or Defend Any?
 	(if (survival_mode_generator_defend_all)
 		; All of the generators that are supposed to be alive, are
-		(>= (survival_mode_gd_generator_count) (survival_mode_generator_count))
+		(>= (survival_mode_gd_generator_count) intf_gen_generator_count)
 		
 		; At least one generator is alive
 		(> (survival_mode_gd_generator_count) 0)
