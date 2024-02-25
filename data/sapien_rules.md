@@ -1,6 +1,6 @@
 # Sapien Rules
 ## Sapien does not support:
-### Large Working Memory
+### Large Working Memory (using these stack returns can overflow)
 1. long (risky)
 2. vehicle
 3. ai
