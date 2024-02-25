@@ -1,7 +1,7 @@
 # Sapien Rules
 ## Sapien does not support:
-### Large Memory Returns
-1. long
+### Large Working Memory
+1. long (risky)
 2. vehicle
 3. ai
 4. point_reference
