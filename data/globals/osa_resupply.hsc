@@ -8,10 +8,35 @@
 
 ; Script Responsibilities:
 ; Replenish Physical items in the level when triggered.
+; Calls an event for FX if desired.
 ;
 ; Editor Notes:
 ; No checksum for this, as it is not possible to checksum folder existence.
 ; You will just get compile errors.
+
+; device positions
+; ff10 -- used for Firefight.
+; m10_insert_dropoff_a
+; m10_insert_dropoff_b
+; m10_dropoff
+; m10_insert_dropoff_a_leomar
+; m10_insert_dropoff_b_leomar
+; device:position
+; 
+; m50_starport_escape
+;
+
+;; ========================== REQUIRED in Sapien ==================================
+; these folders must exist in their respective categories.
+(global folder folder_survival_scenery 		sc_survival) 	; objects/scenery/sc_survival
+(global folder folder_survival_crates 		cr_survival) 	; objects/crates/cr_survival
+(global folder folder_survival_vehicles 	v_survival) 	; objects/units/vehicles/v_survival
+(global folder folder_survival_equipment 	eq_survival)	; objects/items/equipment/eq_survival
+(global folder folder_survival_weapons 		wp_survival)	; objects/items/weapons/wp_survival
+(global folder folder_survival_devices 		dc_survival)	; objects/devices/controls/dc_survival
+
+;; -------------------------- REQUIRED in Sapien ----------------------------------
+
 
 ;; ========================================================================
 ;; ========================== INTERFACES ==================================
@@ -45,41 +70,17 @@
 ;; -------------------------- INTERFACES ----------------------------------
 ;; ------------------------------------------------------------------------
 
-; device positions
-; ff10 -- used for Firefight.
-; m10_insert_dropoff_a
-; m10_insert_dropoff_b
-; m10_dropoff
-; m10_insert_dropoff_a_leomar
-; m10_insert_dropoff_b_leomar
-; device:position
-; 
-; m50_starport_escape
-;
-
 ;=========================================================================
 ;============================== PLUGINS ==================================
 ;=========================================================================
 
-(script static void intf_plugin_ff_resupply_0
+(script static void intf_plugin_osa_resupply
 	(set intf_resupply_refresh_trigger true)
 ) ; warzone not required, BUT, will run this for you if included.
 
 ;------------------------------ PLUGINS ----------------------------------
 
 ;; ========================== PUBLIC VARIABLES Read-Only ==================================
-
-
-;; ========================== REQUIRED in Sapien ==================================
-; these folders must exist in their respective categories.
-(global folder folder_survival_scenery 		sc_survival) 	; objects/scenery/sc_survival
-(global folder folder_survival_crates 		cr_survival) 	; objects/crates/cr_survival
-(global folder folder_survival_vehicles 	v_survival) 	; objects/units/vehicles/v_survival
-(global folder folder_survival_equipment 	eq_survival)	; objects/items/equipment/eq_survival
-(global folder folder_survival_weapons 		wp_survival)	; objects/items/weapons/wp_survival
-(global folder folder_survival_devices 		dc_survival)	; objects/devices/controls/dc_survival
-
-;; -------------------------- REQUIRED in Sapien ----------------------------------
 
 
 ;; ========================== Internal Use CONSTANTS/VARS ==================================
