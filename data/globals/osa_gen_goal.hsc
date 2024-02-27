@@ -8,11 +8,32 @@
 
 ; Script Responsibilities:
 ; GENERATOR DEFENSE SCRIPTS
+; Does not spawn anything, is intended to be an addon to the game mode.
 ;
 ; Editor Notes:
 ; out of memory with the device names, so got rid of them.
 ; May need to look into culling unused resources from the pools.
 ; May reduce transport pool to 6 units instead of 8
+
+;; ========================== REQUIRED in Sapien ==================================
+
+; device machines
+; objects/props/human/unsc/generator_x_large -> generator0
+; objects/props/human/unsc/generator_x_large -> generator1
+; objects/props/human/unsc/generator_x_large -> generator2
+
+; device controls
+; objects/levels/firefight/invisible_switch_gen -> generator_switch0
+; objects/levels/firefight/invisible_switch_gen -> generator_switch1
+; objects/levels/firefight/invisible_switch_gen -> generator_switch2
+; objects/levels/firefight/invisible_switch_gen_cool -> generator_switch_cool0
+; objects/levels/firefight/invisible_switch_gen_cool -> generator_switch_cool1
+; objects/levels/firefight/invisible_switch_gen_cool -> generator_switch_cool2
+; objects/levels/firefight/invisible_switch_gen_disabled -> generator_switch_disabled0
+; objects/levels/firefight/invisible_switch_gen_disabled -> generator_switch_disabled1
+; objects/levels/firefight/invisible_switch_gen_disabled -> generator_switch_disabled2
+
+;; -------------------------- REQUIRED in Sapien ----------------------------------
 
 ;; ========================================================================
 ;; ========================== INTERFACES ==================================
@@ -42,26 +63,6 @@
 ;; ========================== PUBLIC VARIABLES Read-Only ==================================
 
 
-;; ========================== REQUIRED in Sapien ==================================
-
-; device machines
-; objects/props/human/unsc/generator_x_large -> generator0
-; objects/props/human/unsc/generator_x_large -> generator1
-; objects/props/human/unsc/generator_x_large -> generator2
-
-; device controls
-; objects/levels/firefight/invisible_switch_gen -> generator_switch0
-; objects/levels/firefight/invisible_switch_gen -> generator_switch1
-; objects/levels/firefight/invisible_switch_gen -> generator_switch2
-; objects/levels/firefight/invisible_switch_gen_cool -> generator_switch_cool0
-; objects/levels/firefight/invisible_switch_gen_cool -> generator_switch_cool1
-; objects/levels/firefight/invisible_switch_gen_cool -> generator_switch_cool2
-; objects/levels/firefight/invisible_switch_gen_disabled -> generator_switch_disabled0
-; objects/levels/firefight/invisible_switch_gen_disabled -> generator_switch_disabled1
-; objects/levels/firefight/invisible_switch_gen_disabled -> generator_switch_disabled2
-
-;; -------------------------- REQUIRED in Sapien ----------------------------------
-
 
 ;; ========================== Internal Use CONSTANTS/VARS ==================================
 ; You don't need to read or know any of the internals. The abv functions are the result of all the code below.
@@ -83,16 +84,15 @@
 
 (global short intf_gen_generator_count (survival_mode_generator_count))
 
-;; Access interfaces in firefight
 
-(script static void intf_plugin_ff_game_over_event
+(script static void plugin_bgm_game_over_event
 	(if (= b_survival_game_end_condition 1)
 		(event_survival_spartans_win_gen)
 		(event_survival_elites_win_gen)
 	)
 )
 
-(script static boolean intf_plugin_ff_sudden_death_condition
+(script static boolean plugin_bgm_sudden_death_cond
 	(or
 		; Generator alive and closed?
 		(and
@@ -112,14 +112,14 @@
 	)
 )
 
-(script static void intf_plugin_ff_sudden_death_extension
+(script static void plugin_bgm_sudden_death_event
 	; Lock the generators that exist
 	(device_set_power generator_switch0 0)
 	(device_set_power generator_switch1 0)
 	(device_set_power generator_switch2 0)
 )
 
-(script static void intf_plugin_ff_goal_custom_0
+(script static void plugin_bgm_goal_monitor
 	(print "Generator Defense Addon Enabled!")
 	(if (> intf_gen_generator_count 0)
 		(wake osa_generator_defense)
