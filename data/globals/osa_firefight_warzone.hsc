@@ -36,6 +36,35 @@
 ; ... so.. thats why the devs didn't use for-loops. fk.
 
 
+
+
+;; ========================== REQUIRED in Sapien ==================================
+; REQUIRED AI/Squad Groups
+; If you intend to use FF plugin:
+; waves go to gr_survival_remaining at end of wave. Used to trigger some objective tasks that make the AI come near you.
+; generally waves spawn in separate squads and thus can attempt tasks that are limited to 4 ai for ex.
+; gr_survival_remaining might fill up to more than 4, so they would be ineligible to do them.
+; not setting a task limit can result in a rush with dozens of combatants, user beware.
+; gr_survival_remaining     -> gr_survival_elites
+
+; gr_survival_waves         -> gr_survival_elites
+; gr_survival_bonus         -> gr_survival_elites
+
+; intf_ff_objective -- the objective with a hold_task
+
+; intf_plugin_ff_hazard_spawn_0 - You have to implement a stub when its sent a var IM SORRY. Sapien is glitching out during compile
+
+
+; you are requred to implement this script. Part of a compile bug. (not my bug -_-)
+; (script static void (intf_plugin_ff_hazard_spawn_0 (vehicle phantom))
+    ; (print_if dbg_ff "intf_plugin_ff_hazard_spawn_0")
+; ) ;; use this script to supply hazard squads or vehicles to phantoms when spawning.
+
+
+;; -------------------------- REQUIRED in Sapien ----------------------------------
+
+
+
 ;; ========================================================================
 ;; ========================== INTERFACES ==================================
 ;; ========================================================================
@@ -111,22 +140,7 @@
 (script static void intf_ff_force_use_transports
 	(set s_sur_dropship_force_on true)
 )
-; (script stub void (intf_plugin_ff_hazard_spawn_0 (vehicle phantom))
-    ; (print_if dbg_ff "intf_plugin_ff_hazard_spawn_0")
-; ) ;; use this script to supply hazard squads or vehicles to phantoms when spawning.
-(script stub void intf_plugin_ff_hazard_custom_0
-    ;; wake monitoring script
-    (print_if dbg_ff "intf_plugin_ff_hazard_custom_0")
-);; use this to wake your hazard scripts as part of automatic interface with firefight.
-(script stub void intf_plugin_ff_hazard_custom_1
-    ;; wake monitoring script
-    (print_if dbg_ff "intf_plugin_ff_hazard_custom_1")
-);; use this to wake your hazard scripts as part of automatic interface with firefight.
-(script stub void intf_plugin_ff_hazard_custom_2
-    ;; use this to wake your hazard scripts as part of automatic interface with firefight.
-    ;; wake monitoring script
-    (print_if dbg_ff "intf_plugin_ff_hazard_custom_2")
-)
+
 (script stub void intf_plugin_ff_kill_volumes_on
 	(print_if dbg_ff "**turn on kill volumes**")
 )
@@ -136,57 +150,10 @@
 (script stub void intf_plugin_ff_vehicle_cleanup
 	(print_if dbg_ff "**vehicle cleanup**")
 )
-(script stub void intf_plugin_ff_goal_custom_0
-    ;; wake monitoring script
-    ;; (set b_survival_game_end_condition 1)
-    (print_if dbg_ff "intf_plugin_ff_goal_custom_0")
-);; claimed by generators_goal.hsc -- use custom 1 to have both yours and that.
-(script stub void intf_plugin_ff_goal_custom_1
-    ;; (set b_survival_game_end_condition 1)
-    ;; wake monitoring script
-    (print_if dbg_ff "intf_plugin_ff_goal_custom_1")
-)
-(script stub void intf_plugin_ff_default_win_condition
-    (intf_ff_set_survival_end_state 1)
-); spartans win by default
-(script stub void intf_plugin_ff_end_game_custom_0
-    ;; wake monitoring script
-    ;; (set b_survival_game_end_condition 1)
-    (print_if dbg_ff "intf_plugin_ff_end_game_custom_0")
-) ; reserved by generators_goal.hsc -- use custom 1 to have both yours and that.
-(script stub void intf_plugin_ff_end_game_custom_1
-    ;; (set b_survival_game_end_condition 1)
-    ;; wake monitoring script
-    (print_if dbg_ff "intf_plugin_ff_end_game_custom_1")
-) ; open
-(script static void (intf_ff_set_survival_end_state (short value))
-	(if (not (test_survival_end_condition)) ;; game not declared yet.
-		(set b_survival_game_end_condition value)
-	)
-)
-(script stub void intf_plugin_ff_game_over_event
-    (print_if dbg_ff "intf_plugin_ff_game_over_event")
-    (if (= b_survival_game_end_condition 1)
-        (event_survival_spartans_win_normal)
-        (event_survival_elites_win_normal)
-    )
-) ; reserved by generator def
-(script stub boolean intf_plugin_ff_sudden_death_condition
-    (print_if dbg_ff "No sudden death for normal mode")
-    FALSE
-) ; reserved by generator def
-(script stub void intf_plugin_ff_sudden_death_extension
-    (print_if dbg_ff "Enter Sudden Death Extension")
-) ; reserved by generator def
-(script stub void intf_plugin_ff_resupply_0
+
+(script stub void plugin_osa_resupply
 	(print_if dbg_ff "Warzone round start plugin 0")
-); reserved by resupply plugin
-(script stub void intf_plugin_ff_resupply_1
-	(print_if dbg_ff "Warzone round start plugin 1")
-); open
-(script stub void intf_plugin_ff_resupply_2
-	(print_if dbg_ff "Warzone round start plugin 2")
-); open
+); used by resupply plugin
 
 ;; ------------------------------------------------------------------------
 ;; -------------------------- INTERFACES ----------------------------------
@@ -196,51 +163,23 @@
 ;; ========================== PUBLIC VARIABLES Read-Only ==================================
 
 
-;; ========================== REQUIRED in Sapien ==================================
-; REQUIRED AI/Squad Groups
-; If you intend to use FF plugin:
-; waves go to gr_survival_remaining at end of wave. Used to trigger some objective tasks that make the AI come near you.
-; generally waves spawn in separate squads and thus can attempt tasks that are limited to 4 ai for ex.
-; gr_survival_remaining might fill up to more than 4, so they would be ineligible to do them.
-; not setting a task limit can result in a rush with dozens of combatants, user beware.
-; gr_survival_remaining     -> gr_survival_elites
-
-; gr_survival_waves         -> gr_survival_elites
-; gr_survival_bonus         -> gr_survival_elites
-
-; intf_ff_objective -- the objective with a hold_task
-
-; intf_plugin_ff_hazard_spawn_0 - You have to implement a stub when its sent a var IM SORRY. Sapien is glitching out during compile
-
-;; -------------------------- REQUIRED in Sapien ----------------------------------
-
-
 ;; ========================== Internal Use CONSTANTS/VARS ==================================
 
-(global boolean dbg_ff False)
+(global short osa_track_lives_reward 0)
 
-; Kill all scripts
-(global boolean b_survival_kill_threads FALSE) ;; use this to end monitoring loops.
-
-; Has a human player ever spawned?
-(global boolean b_survival_human_spawned false)
-(global short   osa_track_lives_reward 0)
-
+(global short S_SUR_AI_WEAK 10) ; triggers that look for weak AI presence will trigger.
 ; sets how many ai can be alive before the next wave will spawn 
 (global short k_sur_ai_rand_limit 4)
 (global short k_sur_ai_final_limit 0)
 
-
 ; controls the number of rounds per set 
 (global short k_sur_wave_per_round_limit 5)
-(global short k_sur_round_per_set_limit 3)
 
 ; These timers are generally cumulative
 (global short k_sur_wave_timer 180)		; Delay following every wave
 (global short k_sur_round_timer 150)	; Delay following every round
 (global short k_sur_set_timer 300)		; Delay following every set
 (global short k_sur_bonus_timer 150)	; Delay following every bonus round
-(global short k_sur_wave_timeout 0)		; Not used
 
 (global boolean s_sur_dropship_force_on false)
 (global short s_sur_loader_loop_idx 0)
@@ -257,49 +196,6 @@
 (global short osa_phm_idx_02 0)
 (global short osa_phm_idx_03 0)
 
-; The number of waves completed NOT COUNTING BONUS WAVE
-; Used to determine when the game should end due to completion
-(global short s_survival_wave_complete_count 0)
-
-
-;==================================== Script Settings ====================================
-
-;=============================================================================================================================
-;============================================ SURVIVAL CONSTANTS =============================================================
-;=============================================================================================================================
-
-(global short S_SUR_AI_WEAK 10) ; triggers that look for weak AI presence will trigger.
-
-
-
-
-
-;================================== Firefight init ==================================
-
-; In it's own thread
-(script continuous survival_garbage_collector
-	(sleep_forever)
-	(add_recycling_volume_by_type garbage_collection 4 20 16371)
-	(sleep (* 30 20))
-	(add_recycling_volume_by_type garbage_collection 30 10 12)
-)
-
-(script dormant osa_detect_player_spawn
-	(sleep_until (> (players_human_living_count) 0))
-	(set b_survival_human_spawned true)
-) ; blocks game over from human deaths when humans aren't present.
-
-(script startup survival_init_lives
-	(if (< (survival_mode_get_shared_team_life_count) 0)
-		(survival_mode_lives_set player -1)
-		(survival_mode_lives_set player (survival_mode_get_shared_team_life_count))		
-	)
-	(if (< (survival_mode_get_elite_life_count) 0)
-		(survival_mode_lives_set covenant_player -1)
-		(survival_mode_lives_set covenant_player (survival_mode_get_elite_life_count))
-	)
-)
-
 ;============================================ MAIN LOOP ===============================================================
 ; MAIN SURVIVAL MODE SCRIPT 
 (script dormant osa_ff_main_loop
@@ -308,7 +204,6 @@
 	;; A sign of this: The HUD for FF doesn't show up.
 	(print "WARZONE START")
 	(wake osa_detect_player_spawn) ;; don't block game loop for this bc we want elites to be able to play alone.
-	(wake survival_round_timer_counter)
 	(wake survival_elite_life_monitor)
 
 	; Set allegiances
@@ -318,27 +213,6 @@
 	(ai_allegiance covenant_player covenant)
 
 	; ai_enable_stuck_flying_kill group TRUE
-
-	; Set loadouts
-	(player_set_spartan_loadout (human_player_in_game_get 0))
-	(player_set_spartan_loadout (human_player_in_game_get 1))
-	(player_set_spartan_loadout (human_player_in_game_get 2))
-	(player_set_spartan_loadout (human_player_in_game_get 3))
-	(player_set_spartan_loadout (human_player_in_game_get 4))
-	(player_set_spartan_loadout (human_player_in_game_get 5))
-	(player_set_spartan_loadout (human_player_in_game_get 6))
-	(player_set_spartan_loadout (human_player_in_game_get 7))
-	(player_set_elite_loadout (elite_player_in_game_get 0))
-	(player_set_elite_loadout (elite_player_in_game_get 1))
-	(player_set_elite_loadout (elite_player_in_game_get 2))
-	(player_set_elite_loadout (elite_player_in_game_get 3))
-	(player_set_elite_loadout (elite_player_in_game_get 4))
-	(player_set_elite_loadout (elite_player_in_game_get 5))
-	(player_set_elite_loadout (elite_player_in_game_get 6))
-	(player_set_elite_loadout (elite_player_in_game_get 7))
-	
-	; start survival music 
-	(sound_looping_start m_survival_start NONE 1)
 	
 	; Activate custom goals/endgame
 	(intf_plugin_ff_goal_custom_0)
@@ -346,8 +220,6 @@
 	
 	; Blink
 	(sleep 1)
-	; Garbage collect, in case anything is left over from previous rounds (sob)
-	(garbage_collect_now)
 
 	; announce survival mode 
 	(sleep (* 30 1))
@@ -357,25 +229,11 @@
 
 	; wake secondary scripts
 	; (wake survival_bonus_round_end) ;; watches for end and closes bonus round.
-	(wake survival_end_game) ;; watches for endgame.
 	; (wake survival_bonus_round_dropship) ;; continuously watches for available dropship to spawn bonus.
 	(wake survival_score_attack) ; -> osa_utils.hsc
-	(wake osa_automatic_announcer) ; -> osa_firefight_incident
 	
 	; begin delay timer 
 	(sleep (* 30 3))
-
-	; stop opening music 
-	(sound_looping_stop m_survival_start)
-
-	;Enable custom hazard scripts.
-	(if (survival_mode_scenario_extras_enable)
-		(begin 
-			(intf_plugin_ff_hazard_custom_0)
-			(intf_plugin_ff_hazard_custom_1)
-			(intf_plugin_ff_hazard_custom_2)
-		)
-	)
 	
 	; main wave loop SET Encapsulation.	
 	(sleep_until
@@ -384,9 +242,7 @@
 			(survival_mode_begin_new_set)
 			(sleep 1)
 				
-			(intf_plugin_ff_resupply_0)
-			(intf_plugin_ff_resupply_1)
-			(intf_plugin_ff_resupply_2)
+			(plugin_osa_resupply)
 			
 			; BEGIN WAVE LOOP
 			; At this point we are at the BEGINNING OF A SET, WAVE 1
@@ -494,22 +350,19 @@ The jurisdiction of this script ends after the bonus wave is complete.
 			(if 
 				(and
 					(< (survival_mode_wave_get) k_sur_wave_per_round_limit)
-					(< s_survival_wave_complete_count (- (survival_mode_get_set_count) 1))
+					(< (survival_mode_set_get) (- (survival_mode_get_set_count) 1))
 				)
 				(sleep k_sur_wave_timer)
 			)
 
 			; At this point the wave has spawned and been defeated.
 			
-			; Increment the wave complete count for game over condition
-			(set s_survival_wave_complete_count (+ s_survival_wave_complete_count 1))
-			
 			; Kill this loop if we're past the end condition count
 			; Prevents more loop business from happening
 			(if 
 				(and
 					(> (survival_mode_get_set_count) 0)
-					(>= s_survival_wave_complete_count (survival_mode_get_set_count))	
+					(>= (survival_mode_set_get) (survival_mode_get_set_count))	
 				)
 				(begin
 					(sleep_forever)
@@ -533,9 +386,7 @@ The jurisdiction of this script ends after the bonus wave is complete.
 					; If this isn't the last boss wave in the round,
 					(if (< (survival_mode_round_get) 2)	
 						(begin
-							(intf_plugin_ff_resupply_0)
-							(intf_plugin_ff_resupply_1)
-							(intf_plugin_ff_resupply_2)
+							(plugin_osa_resupply)
 							(sleep k_sur_round_timer)
 						)
 					)
@@ -560,7 +411,7 @@ The jurisdiction of this script ends after the bonus wave is complete.
 	(if 
 		(and
 			(> (survival_mode_get_set_count) 0)
-			(>= s_survival_wave_complete_count (survival_mode_get_set_count))	
+			(>= (survival_mode_set_get) (survival_mode_get_set_count))	
 		)
 		(begin
 			(sleep_forever)
@@ -631,7 +482,7 @@ The jurisdiction of this script ends after the bonus wave is complete.
 			(>= (survival_mode_wave_get) (- k_sur_wave_per_round_limit 1))
 			(and
 				(> (survival_mode_get_set_count) 0)
-				(>= s_survival_wave_complete_count (- (survival_mode_get_set_count) 1))	
+				(>= (survival_mode_set_get) (- (survival_mode_get_set_count) 1))	
 			)
 		)
 				
@@ -686,397 +537,6 @@ The jurisdiction of this script ends after the bonus wave is complete.
 
 )
 ; --- wave end parameters ---------------------------------------------------==
-
-
-;=============================================================================================================================
-;============================================ BONUS ROUND SCRIPTS ============================================================
-;=============================================================================================================================
-
-
-(global boolean b_sur_bonus_round_running FALSE)
-(global boolean b_sur_bonus_end FALSE)
-(global boolean b_sur_bonus_spawn TRUE)
-
-(global long l_sur_pre_bonus_points 0)
-(global long l_sur_post_bonus_points 0)
-
-(global short s_sur_bonus_count 0)
-(global short k_sur_bonus_squad_limit 6)
-
-(global short k_sur_bonus_limit 20)
-
-(global boolean b_survival_bonus_timer_begin FALSE)
-(global short k_survival_bonus_timer (* 30 60 1))
-
-
-; (script static void survival_bonus_round
-; 	(print_if dbg_ff "** start bonus round **")
-	
-; 	; mark survival mode as "running" 
-; 	(set b_sur_bonus_round_running TRUE)
-; 	(set b_sur_bonus_end FALSE)
-
-; 	; sum up the total points before the BONUS ROUND begins 
-; 	(set l_sur_pre_bonus_points (survival_total_score))
-	
-; 	; mark as the start of bonus round
-; 	(survival_mode_begin_new_wave)
-	
-; 	; Get the bonus round duration
-; 	(set k_survival_bonus_timer (* (survival_mode_get_current_wave_time_limit) 30))
-	
-; 	; Display bonus round timer
-; 	(chud_bonus_round_set_timer (survival_mode_get_current_wave_time_limit))
-; 	(chud_bonus_round_show_timer true)
-	
-; 	;tysongr - 54505: Respawn players before the bonus round
-; 	(survival_mode_respawn_dead_players)
-			
-; 	; announce BONUS ROUND
-; 	(event_survival_bonus_round)
-; 	(sleep 90)
-	
-; 	; spawn in phantom if needed 
-; 	(if (wave_dropship_enabled) 
-; 		(begin
-; 			(if intf_t_bonus_random
-; 				(begin 
-; 					(print_if dbg_ff "Pick a random phantom to be the bonus :>")
-; 					(sleep_until 
-; 						(begin 
-; 							(begin_random_count 1 
-; 								(set intf_sq_phantom_bonus intf_sq_phantom_01)
-; 								(set intf_sq_phantom_bonus intf_sq_phantom_02)
-; 								(set intf_sq_phantom_bonus intf_sq_phantom_03)
-; 							)
-; 							(!= NONE intf_sq_phantom_bonus)
-; 						)
-; 						1
-; 					)
-; 				)
-; 			) ; else use the preset phantom.
-; 			; Before it spawns, let's enable the hold mechanic.
-; 			(intf_pool_set_hold_en intf_sq_phantom_bonus true)
-; 			(ai_place intf_sq_phantom_bonus)
-; 			(ai_squad_enumerate_immigrants intf_sq_phantom_bonus true)
-; 			(sleep 1)
-			
-; 			; My sauce was weak. This makes it strong.
-; 			(f_survival_bonus_spawner true)
-; 			(f_survival_bonus_spawner true)
-; 			(f_survival_bonus_spawner true)
-; 			(f_survival_bonus_spawner true)
-; 		)
-; 	)
-	
-; 	; Start the bonus round end condition timer
-; 	(set b_survival_bonus_timer_begin TRUE)
-	
-; 	; re-populate the space with a single squad 
-; 	(sleep_until 
-; 		(begin
-; 			; Sleep until the number of AI drops below the bonus limit 
-; 			(sleep_until	
-; 				(or
-; 					b_sur_bonus_end
-; 					(<= (survival_mode_bonus_living_count) k_sur_bonus_limit)
-; 					(osa_utils_players_dead)
-; 				)
-; 				1
-; 			)
-
-; 			; If the round isn't over...
-; 			(if	
-; 				(and
-; 					(not (osa_utils_players_dead))
-; 					(not b_sur_bonus_end)
-; 				)
-; 				(begin
-; 					(f_survival_bonus_spawner false)
-; 				)
-; 			)
-
-; 			; continue in this loop until the timer expires 
-; 			; OR all players are dead 
-; 			(or
-; 				b_sur_bonus_end
-; 				(osa_utils_players_dead)
-; 			)
-; 		)
-; 		1
-; 	)
-				
-; 	; kill all ai 
-; 	(ai_kill_no_statistics intf_gr_ff_waves)
-; 	(ai_kill_no_statistics intf_sq_ff_bonus)
-; 	(sleep 90)
-
-; 	; announce bonus round over 
-; 	(event_survival_bonus_round_over)
-
-; 	; respawn players 
-; 	(skull_enable skull_iron false)
-; 	(survival_mode_respawn_dead_players)
-; 	(sleep 30)
-	
-; 	; End the wave and set
-; 	(survival_mode_end_wave)
-; 	(survival_mode_end_set)
-
-; 	; Increment the wave complete count for game over condition
-; 	(set s_survival_wave_complete_count (+ s_survival_wave_complete_count 1))
-
-; 	; delay timer 
-; 	(sleep 120)
-
-; 	; calculate the number of points scored during the bonus round 
-; 	(set l_sur_post_bonus_points (survival_total_score))
-	
-; 	; clear timer 
-; 	(chud_bonus_round_set_timer 0)
-; 	(chud_bonus_round_show_timer FALSE)
-; 	(chud_bonus_round_start_timer FALSE)
-
-; 	; reset parameters 
-; 	(set k_sur_bonus_squad_limit 6)
-; 	(intf_pool_unblock_transport intf_sq_phantom_bonus)
-	
-; 	; after bonus round. disable hold of current bonus phantom so it can be used during normal waves.
-; 	(intf_pool_set_hold_en intf_sq_phantom_bonus false)
-	
-; 	; mark survival mode as "not-running" 
-; 	(set b_sur_bonus_round_running FALSE)
-; )
-
-
-; (script dormant survival_bonus_round_end
-; 	(sleep_until
-; 		(begin
-; 			(sleep_until b_survival_bonus_timer_begin 1)
-; 			(chud_bonus_round_start_timer TRUE)
-; 			(sleep_until 
-; 				(osa_utils_players_dead) 
-; 				1 
-; 				k_survival_bonus_timer
-; 			)
-			
-; 			; turn off bonus round 
-; 			(set b_sur_bonus_end TRUE)
-		
-; 			; if all players are dead reset the timer 
-; 			(if (osa_utils_players_dead)
-; 				(begin
-; 					(chud_bonus_round_start_timer FALSE)
-; 					(chud_bonus_round_set_timer 0)
-; 				)
-; 			)
-				
-; 			(set b_survival_bonus_timer_begin FALSE)
-			
-; 			; Loop forever
-; 			b_survival_kill_threads
-; 		)
-; 		1
-; 	)
-; )
-
-
-;(global ai survival_bonus_last_squad none)
-; (script static void (f_survival_bonus_spawner (boolean force_load))
-; 	(print_if dbg_ff "spawn bonus squad...")
-	
-; 	; Load them into the dropship if appropriate
-; 	(if
-; 		(or 
-; 			force_load
-; 			(and
-; 				(intf_pool_is_tranport_holding intf_sq_phantom_bonus)
-; 				(wave_dropship_enabled)
-; 				(= (random_range 0 2) 0)		
-; 			)
-; 		)
-		
-; 		; Spawn them in limbo and load them
-; 		(begin
-; 			; Place the squad
-; 			(ai_place_wave (survival_mode_get_wave_squad) intf_gr_ff_waves 1)
-; 			(sleep 1)
-; 			(intf_pool_get_transport_running_script intf_sq_phantom_bonus)
-; 			; Get the squad, and load it
-; 			(survival_attempt_load intf_pool_t_running_export intf_drop_side_bonus intf_gr_ff_waves FALSE)
-; 		)
-		
-; 		; Otherwise, spawn and migrate them
-; 		(begin
-; 			(ai_place_wave (survival_mode_get_wave_squad) intf_gr_ff_waves 1)
-; 			(sleep 1)
-; 			(ai_migrate_persistent intf_gr_ff_waves intf_sq_ff_bonus)
-; 		)
-; 	)
-	
-; 	; Bedlam?
-
-; )
-
-; (script dormant survival_bonus_round_dropship
-; 	(sleep_until
-; 		(begin
-; 			(sleep_until 
-; 				(or
-; 					(intf_pool_is_tranport_holding intf_sq_phantom_bonus) 
-; 					b_sur_bonus_end
-; 				)
-; 				5
-; 			)
-; 			(if (not b_sur_bonus_end)
-; 				(begin
-; 					(intf_pool_get_thread_from_sq intf_sq_phantom_bonus)
-; 					(unit_open intf_pool_t_running_export)
-; 					(sleep_until 
-; 						(begin
-; 							; Empy the dropship. Is it a Phantom or a Spirit?
-; 							(osa_ds_unload_dropship intf_pool_t_running_export "any")
-
-; 							; Migrate them (after a short pause)
-; 							(sleep 1)
-; 							(ai_migrate_persistent intf_gr_ff_waves intf_sq_ff_bonus)
-							
-; 							; Loop until bonus round ends
-; 							b_sur_bonus_end
-; 						)
-; 						30
-; 					)
-; 					(unit_close intf_pool_t_running_export)
-; 				)
-; 			)
-		
-; 			; Loop forever
-; 			false
-; 		)
-; 	)
-; )
-
-
-(script static short survival_mode_bonus_living_count
-	(+
-		(ai_living_count intf_gr_ff_waves)
-		(ai_living_count intf_sq_ff_bonus)
-		(ai_living_count intf_sq_phantom_bonus)
-	)
-)
-
-;============================================ BONUS ROUND SCRIPTS
-
-
-;=============================================================================================================================
-;============================================ END GAME SCRIPTS ===============================================================
-;=============================================================================================================================
-
-(global short b_survival_game_end_condition 0) ; 0 Not met, 1 Spartans win, 2 Elites win
-(global short b_survival_entered_sudden_death 0) ; 0 no, 1 started, 2 end.
-(global long l_sur_round_timer 0)
-
-(script dormant survival_round_timer_counter
-	(sleep_until
-		(begin 
-			(set l_sur_round_timer (+ l_sur_round_timer 1))
-			b_survival_kill_threads
-		)
-		30
-	)
-)
-
-(script static boolean test_survival_end_condition
-	(> b_survival_game_end_condition 0)
-)
-(script static void survival_end_finalize
-	(set b_survival_kill_threads true) ;; end all monitors.
-	(if (= b_survival_game_end_condition 1)
-		(begin 
-			(survival_spartans_increment_score) ; -> osa_utils.hsc
-		)
-		(begin 
-			; Elites win, Spartans lose.
-			(survival_elites_increment_score) ; -> osa_utils.hsc
-		)
-	)
-	(intf_plugin_ff_game_over_event) ; normal win gets overridden in generator mode. All by including the file as a script.
-)
-
-(script dormant survival_end_game
-	; Wake the end condition scripts
-	(wake survival_mode_end_condition)
-	(intf_plugin_ff_end_game_custom_0)
-	(intf_plugin_ff_end_game_custom_1)
-	
-	; Sleep until one of them has succeeded
-	(sleep_until (test_survival_end_condition) 30) ; check every second, ticks don't matter dude.
-	
-	(survival_end_finalize)
-
-	; Kill remaining survival threads 
-	(sleep_forever osa_ff_main_loop)
-	; (sleep_forever survival_bonus_round_end)
-	
-	(sleep 120)
-
-	; end game 
-	(mp_round_end_with_winning_team none)
-)
-
-(script dormant survival_mode_end_condition
-	(sleep_until 
-		(begin 
-			(if (and
-					b_survival_human_spawned				; Can't end before a human has even spawned
-					(= b_sur_bonus_round_running FALSE)		; Never succeed during a bonus round
-					(osa_utils_players_dead)					; Players are all dead
-					(osa_utils_players_not_respawning)		; Players are not going to respawn (out of lives, respawn on wave, etc.)
-				)
-				(intf_ff_set_survival_end_state 2)
-			)
-			(if (or
-					(and
-						(= b_sur_bonus_round_running FALSE)
-						(> (survival_mode_get_time_limit) 0)
-						(>= l_sur_round_timer (* (survival_mode_get_time_limit) 60))
-					)
-					(and
-						(> (survival_mode_get_set_count) 0)
-						(>= s_survival_wave_complete_count (survival_mode_get_set_count))
-					)
-				)
-				(if (intf_plugin_ff_sudden_death_condition)
-					; Enter sudden death.
-					(wake survival_sudden_death)
-					(set b_survival_entered_sudden_death 2) ;; skip it
-				)
-			)
-			(if (= b_survival_entered_sudden_death 2); is over
-				(intf_plugin_ff_default_win_condition)
-			)
-			b_survival_kill_threads
-		)
-		
-	30) ;; check every second.
-)
-
-(script dormant survival_sudden_death
-	; Enter sudden death
-	(event_survival_sudden_death)
-	(survival_mode_sudden_death true)
-	(set b_survival_entered_sudden_death 1)
-
-	; Sleep until sudden death no longer in effect or 1 minute
-	(sleep_until (not (intf_plugin_ff_sudden_death_condition)) 2 1800)
-	(set b_survival_entered_sudden_death 2)
-	
-	; Sudden death over
-	(event_survival_sudden_death_over)
-	(survival_mode_sudden_death false)
-	(sleep 30)
-)
-
 
 ;================================== PHANTOM SPAWNING / LOADING ================================================================
 ; Dropships. These can be Phantoms or Spirits depending on scenario settings, but are named "phantom" for legacy support purposes.
@@ -1299,7 +759,9 @@ The jurisdiction of this script ends after the bonus wave is complete.
 	(ai_set_task squad intf_ff_objective hold_task)
 )
 
-
+;=============================================================================================================================
+;============================================ LIVES AND LIVING COUNTS ========================================================
+;=============================================================================================================================
 
 
 (script continuous survival_elite_life_monitor
@@ -1314,174 +776,6 @@ The jurisdiction of this script ends after the bonus wave is complete.
 	(set osa_track_lives_reward osa_player_dead_count_elites)
 	(sleep 5)
 )
-
-;=============================================================================================================================
-;============================================ Audio FX SCRIPTS ===============================================================
-;=============================================================================================================================
-;=============================================================================================================================
-;=============================================================================================================================
-
-;=============================================================================================================================
-;============================================ ANNOUNCEMENT SCRIPTS ===========================================================
-;=============================================================================================================================
-
-;===================================== BEGIN ANNOUNCER =======================================================================
-
-; this script assumes that at the start of a SET the rounds and waves are set to -- 0 -- 
-; also, at the start of a ROUND waves are set to -- 0 -- 
-
-
-; 0 default, 1 new, 2 end. ;; For fuk sake, conserve variable pointers and just use more memory. ITS A PC!!!!!
-(global short s_survival_state_set 0)
-(global short s_survival_state_round 0)
-(global short s_survival_state_wave 0)
-(global short s_survival_state_lives 0)
-
-;; use a state machine to manage inbound-outbound waves.
-(script dormant osa_automatic_announcer
-	(sleep_until 
-		(begin 
-			(if (= s_survival_state_wave 2) ;; main loop has marked the end of a wave.
-				(begin 
-					(if (< (survival_mode_wave_get) k_sur_wave_per_round_limit)
-						(set s_survival_state_wave 2) ;; leave as is
-						(begin 
-							(if (< (survival_mode_round_get) k_sur_round_per_set_limit)
-								(set s_survival_state_round 2)
-								(set s_survival_state_set 2)
-							)
-						)
-					)
-					(survival_mode_wave_music_stop) ; Stop music
-				)
-			)
-			(if (= s_survival_state_wave 1)
-				(begin 
-					(survival_mode_wave_music_start) ; Begin music loop
-					(print_if dbg_ff "announce new wave...")
-					(if (not (survival_mode_current_wave_is_initial)) ; TODO make sure this is correct (updated for 0 index)
-						(begin
-							; attempt to award the hero medal 
-							(survival_mode_award_hero_medal)
-								(sleep 1)
-								
-							; respawn dead players (WE DO NOT ADD LIVES HERE) 
-							(event_survival_reinforcements)
-							(survival_mode_respawn_dead_players)
-								(sleep (* (random_range 3 5) 30))
-						)
-						(set s_survival_state_round 1)
-					)
-					(set s_survival_state_wave 0)
-				)
-			)
-			(if (and (= s_survival_state_round 1) (= (survival_mode_round_get) 0))
-				(begin 
-					(set s_survival_state_set 1)
-					(set s_survival_state_round 0)
-				)
-			)
-			(if (= s_survival_state_set 1)
-				(begin 
-					(print_if dbg_ff "announce new set...")
-					(surival_set_music)
-					(event_countdown_timer)
-					(event_survival_new_set)
-					(set s_survival_state_set 0)
-
-				)
-			)
-			(if (= s_survival_state_round 1)
-				(begin 
-					(print_if dbg_ff "announce new round...")
-					(event_countdown_timer)
-					(event_survival_new_round)
-					(set s_survival_state_round 0)
-				)
-			)
-			(if (= s_survival_state_set 2)
-				(begin 
-					(print_if dbg_ff "announce end set...")
-					(event_survival_end_set)
-					(set s_survival_state_set 0)
-
-				)
-			)
-			(if (= s_survival_state_round 2)
-				(begin 
-					(print_if dbg_ff "announce end round...")
-					(event_survival_end_round)
-					(set s_survival_state_round 0)
-
-				)
-			)
-			(if (= s_survival_state_wave 2)
-				(begin 
-					(print_if dbg_ff "announce end wave...")
-					(set s_survival_state_wave 0)
-
-				)
-			)
-
-			;; announce lives state
-			(if (or (= s_survival_state_lives 0) (> (survival_mode_lives_get player) 5))
-				(set s_survival_state_lives 1)
-			)
-			(if (= s_survival_state_lives 1)
-				(if (and (<= (survival_mode_lives_get player) 5) (>= (survival_mode_lives_get player) 0) )
-					(begin 
-						(print_if dbg_ff "5 lives left...")
-						(event_survival_5_lives_left)
-						(set s_survival_state_lives 2)
-					)
-				)
-			)
-			(if (= s_survival_state_lives 2)
-				(if (and (<= (survival_mode_lives_get player) 1) (>= (survival_mode_lives_get player) 0) )
-					(begin 
-						(print_if dbg_ff "1 life left...")
-						(event_survival_1_life_left)
-						(set s_survival_state_lives 3)
-					)
-				)
-			)
-			(if (= s_survival_state_lives 3)
-				(if (= (survival_mode_lives_get player) 0) 
-					(begin 
-						(print_if dbg_ff "0 lives left...")
-						(event_survival_0_lives_left)
-						(set s_survival_state_lives 4)
-					)
-				)
-			)
-			(if (= s_survival_state_lives 4)
-				(if (= (players_human_living_count) 1)
-					(begin 
-						(print_if dbg_ff "last man standing...")
-						(event_survival_last_man_standing)
-						(set s_survival_state_lives 5) ;; exit fsm lol. this was bug.
-					)
-				)
-			)
-			(if (and (> s_survival_state_lives 1) (> (survival_mode_lives_get player) 1))
-				(set s_survival_state_lives 2)
-			)
-			b_survival_kill_threads
-		)
-	30) ; sleep one second intervals.
-
-	;; If thread is over, game is over.
-	(survival_mode_wave_music_stop)
-	(submit_incident "survival_mm_game_complete") ;; game over
-)
-
-
-;------------------------------------- END ANNOUNCER -------------------------------------------------------------------------
-
-
-;=============================================================================================================================
-;============================================ LIVES AND LIVING COUNTS ========================================================
-;=============================================================================================================================
 
 ; TODO every occurrence of survival_mode_lives_set and survival_mode_lives_get needs to be fixed for passing the team index
 
