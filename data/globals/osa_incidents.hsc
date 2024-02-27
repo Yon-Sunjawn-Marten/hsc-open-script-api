@@ -2,7 +2,74 @@
 
 ; Firefight events/incidents go here as utils.
 
+
+
+;; Intro Options
+; "sound\dialog\firefight\cla_cov_start"
+; "sound\dialog\firefight\cla_unsc_start"
+; "sound\dialog\firefight\gen_unsc_start"
+; "sound\dialog\firefight\gen_cov_start"
+; "sound\dialog\invasion\bone_cv_ph1_intro"
+; "sound\dialog\invasion\bone_sp_ph1_intro"
+; "sound\dialog\invasion\bone_sp_ph2_intro"
+; "sound\dialog\invasion\bone_sp_ph3_intro"
+; "sound\dialog\invasion\isle_cv_ph1_intro"
+; "sound\dialog\invasion\isle_cv_ph2_intro"
+; "sound\dialog\invasion\isle_cv_ph3_intro"
+; "sound\dialog\invasion\isle_sp_ph1_intro"
+; "sound\dialog\multiplayer\reach\multiplayer_game_types\invasion"
+; "sound\dialog\multiplayer\vip\vip"
+
+
+(global boolean intf_en_game_starting_m true)
+(global boolean intf_music_playing false)
+(global short intf_music_sleep 0)
+(global sound intf_incd_m_welcome "sound\dialog\multiplayer\firefight\survival_welcome3")
+(global sound intf_incd_m_intro_cv "sound\dialog\firefight\cla_cov_start")
+(global sound intf_incd_m_intro_sp "sound\dialog\firefight\cla_unsc_start")
+(global looping_sound intf_incd_intro_m   "firefight\firefight_music\firefight_music01")
+(global looping_sound intf_incd_wave_m    "firefight\firefight_music\firefight_music02")
+(global looping_sound intf_incd_round_m   "firefight\firefight_music\firefight_music20")
+(global looping_sound intf_incd_endgame_m "firefight\firefight_music\firefight_music20")
+
+(script static void (intf_load_incd (boolean dbg_en) (boolean use_anouncer) (boolean use_auto_music) (boolean use_weather))
+    (print "incidents/audio events loading...")
+	(set dbg_incidents dbg_en)
+	(print_if dbg_en "Debug-Enabled")
+	; (osa_ff_checksum)
+	(if use_anouncer
+		(wake routine_incd_announcer)
+	)
+	(if use_auto_music
+		(wake routine_incd_music_frm_state)
+	)
+	(if use_weather
+		(wake routine_wea_dst_thunder)
+	)
+); REQUIRED SCRIPT CALL THIS IN YOUR MAIN INIT FILE.
+
+(script static void (intf_incd_set_current_music (looping_sound lpsnd) (short seconds_to_run))
+	(if (not intf_music_playing)
+		(begin 
+			(set osa_incd_current_m lpsnd)
+			(set intf_music_sleep (* 30 seconds_to_run))
+			(set intf_music_playing true)
+		)
+		(print "music currently playing.")
+	)
+	
+)
+
+(script static void intf_incd_stop_current_music
+	(sound_looping_stop osa_incd_current_m)
+)
+
+(script stub boolean plugin_incd_game_abt_end
+	FALSE ;; use this to set ending game music near victory.
+)
+
 (global boolean dbg_incidents FALSE)
+(global looping_sound osa_incd_current_m NONE)
 
 ;================================== SCORE AND ACHIEVEMENTS ====================================================================
 ; Score attack parameters
@@ -82,8 +149,9 @@
 	(submit_incident_with_cause_player incident (human_player_in_game_get 3))
 	(submit_incident_with_cause_player incident (human_player_in_game_get 4))
 	(submit_incident_with_cause_player incident (human_player_in_game_get 5))
+	(submit_incident_with_cause_player incident (human_player_in_game_get 6))
+	(submit_incident_with_cause_player incident (human_player_in_game_get 7))
 )
-
 (script static void (submit_incident_for_elites (string_id incident))
 	(submit_incident_with_cause_player incident (elite_player_in_game_get 0))
 	(submit_incident_with_cause_player incident (elite_player_in_game_get 1))
@@ -91,27 +159,60 @@
 	(submit_incident_with_cause_player incident (elite_player_in_game_get 3))
 	(submit_incident_with_cause_player incident (elite_player_in_game_get 4))
 	(submit_incident_with_cause_player incident (elite_player_in_game_get 5))
+	(submit_incident_with_cause_player incident (elite_player_in_game_get 6))
+	(submit_incident_with_cause_player incident (elite_player_in_game_get 7))
+)
+
+
+(global short osa_incid_win_state 0)
+(script static void (osa_incid_check_win_status (short direction))
+	(if (!= osa_incid_win_state direction)
+		(begin 
+			(if (> direction 0)
+				(begin 
+					(osa_utils_play_sound_for_humans "sound\dialog\multiplayer\general\gained_the_lead")
+					(osa_utils_play_sound_for_elites "sound\dialog\multiplayer\general\lost_the_lead")
+				)
+			)
+			(if (< direction 0)
+				(begin 
+					(osa_utils_play_sound_for_elites "sound\dialog\multiplayer\general\gained_the_lead")
+					(osa_utils_play_sound_for_humans "sound\dialog\multiplayer\general\lost_the_lead")
+				)
+			)
+			(if (= direction 0)
+				(begin 
+					(osa_utils_play_sound_for_humans "sound\dialog\multiplayer\general\tied_the_leader")
+					(osa_utils_play_sound_for_elites "sound\dialog\multiplayer\general\tied_the_leader")
+				)
+			)
+		)
+	)
+	(set osa_incid_win_state direction)
 )
 
 (script static void event_welcome
 	(print_if dbg_incidents "event_welcome")
-	(submit_incident "survival_welcome")
+	; (submit_incident "survival_welcome")
+	(sound_impulse_start intf_incd_m_welcome NONE 1.0)
 )
 
 (script static void event_intro
 	(print_if dbg_incidents "event_intro")
 
+	(osa_utils_play_sound_for_elites intf_incd_m_intro_cv)
+	(osa_utils_play_sound_for_humans intf_incd_m_intro_sp)
 	; Announce the appropriate Firefight gametype
-	(if (> (survival_mode_generator_count) 0)
-		(begin
-			(submit_incident_with_cause_campaign_team "sur_gen_unsc_start" player)
-			(submit_incident_with_cause_campaign_team "sur_gen_cov_start" covenant_player)
-		)
-		(begin
-			(submit_incident_with_cause_campaign_team "sur_cla_unsc_start" player)
-			(submit_incident_with_cause_campaign_team "sur_cla_cov_start" covenant_player)
-		)
-	)
+	; (if (> (survival_mode_generator_count) 0)
+	; 	(begin
+	; 		(submit_incident_with_cause_campaign_team "sur_gen_unsc_start" player)
+	; 		(submit_incident_with_cause_campaign_team "sur_gen_cov_start" covenant_player)
+	; 	)
+	; 	(begin
+	; 		(submit_incident_with_cause_campaign_team "sur_cla_unsc_start" player)
+	; 		(submit_incident_with_cause_campaign_team "sur_cla_cov_start" covenant_player)
+	; 	)
+	; )
 )
 
 (script static void event_survival_awarded_lives
@@ -326,49 +427,82 @@
 ;============================================ MUSIC SCRIPTS ==================================================================
 ;=============================================================================================================================
 
+(script continuous osa_incd_play_current_music
+	(sleep_until intf_music_playing)
+	(sound_looping_start osa_incd_current_m NONE 1.0)
+	(sleep_until (not intf_music_playing) 30 intf_music_sleep) ;; allow interrupts, use the timeout to end it naturally :)
+	(sound_looping_end osa_incd_current_m NONE 1.0)
+	(set osa_incd_current_m NONE)
+	(set intf_music_playing false)
+)
+
 ; music definitions 
-(global looping_sound m_survival_start	"firefight\firefight_music\firefight_music01")
-(global looping_sound m_new_set			"firefight\firefight_music\firefight_music01")
-(global looping_sound m_initial_wave	"firefight\firefight_music\firefight_music02")
-(global looping_sound m_final_wave		"firefight\firefight_music\firefight_music20")
-
-(script static void surival_set_music
-
+(script stub void plugin_incd_randomize_music
 	; set initial music 
 	(begin_random_count 1
-		(set m_initial_wave "firefight\firefight_music\firefight_music02")
-		(set m_initial_wave "firefight\firefight_music\firefight_music03")
-		(set m_initial_wave "firefight\firefight_music\firefight_music04")
-		(set m_initial_wave "firefight\firefight_music\firefight_music05")
-		(set m_initial_wave "firefight\firefight_music\firefight_music06")
+		(set intf_incd_wave_m "firefight\firefight_music\firefight_music02")
+		(set intf_incd_wave_m "firefight\firefight_music\firefight_music03")
+		(set intf_incd_wave_m "firefight\firefight_music\firefight_music04")
+		(set intf_incd_wave_m "firefight\firefight_music\firefight_music05")
+		(set intf_incd_wave_m "firefight\firefight_music\firefight_music06")
 	)
-
 	; set final music 
 	(begin_random_count 1
-		(set m_final_wave "firefight\firefight_music\firefight_music20")
-		(set m_final_wave "firefight\firefight_music\firefight_music21")
-		(set m_final_wave "firefight\firefight_music\firefight_music22")
-		(set m_final_wave "firefight\firefight_music\firefight_music23")
-		(set m_final_wave "firefight\firefight_music\firefight_music24")
+		(set intf_incd_round_m "firefight\firefight_music\firefight_music20")
+		(set intf_incd_round_m "firefight\firefight_music\firefight_music21")
+		(set intf_incd_round_m "firefight\firefight_music\firefight_music22")
+		(set intf_incd_round_m "firefight\firefight_music\firefight_music23")
+		(set intf_incd_round_m "firefight\firefight_music\firefight_music24")
 	)
 )
 
-
-(script static void survival_mode_wave_music_start
-	(cond
-		((survival_mode_current_wave_is_initial) 	(sound_looping_start m_initial_wave NONE 1))
-		((survival_mode_current_wave_is_boss) 		(sound_looping_start m_final_wave NONE 1))		
-	)
+(script static void osa_incd_force_music_switch
+	(set intf_music_playing false)
+	(sleep_until (= NONE osa_incd_current_m)) ;; sleep until music disengages.
 )
 
-
-(script static void survival_mode_wave_music_stop
-	(cond
-		((survival_mode_current_wave_is_initial) 	(sound_looping_stop m_initial_wave))
-		((survival_mode_current_wave_is_boss) 		(sound_looping_stop m_final_wave))		
+(script dormant routine_incd_music_frm_state
+	(sleep_until 
+		(begin 
+			(cond 
+				(intf_en_game_starting_m
+					(begin 
+						(set intf_en_game_starting_m false)
+						(osa_incd_force_music_switch)
+						(set osa_incd_current_m intf_incd_intro_m)
+						(set intf_music_sleep (* 30 60 1)) ;; play 1 minute.
+						(set intf_music_playing true)
+					)
+				)
+				((plugin_incd_game_abt_end)
+					(begin 
+						(osa_incd_force_music_switch)
+						(set osa_incd_current_m intf_incd_endgame_m)
+						(set intf_music_sleep (* 30 60 30)) ;; play 30 minutes.
+						(set intf_music_playing true)
+					)
+				)
+				((survival_mode_current_wave_is_initial)
+					(begin 
+						(osa_incd_force_music_switch)
+						(set osa_incd_current_m intf_incd_wave_m)
+						(set intf_music_sleep (* 30 60 2)) ;; play 2 minutes
+						(set intf_music_playing true)
+					)
+				)
+				((survival_mode_current_wave_is_boss)
+					(begin 
+						(osa_incd_force_music_switch)
+						(set osa_incd_current_m intf_incd_round_m)
+						(set intf_music_sleep (* 30 60 2)) ;; play 2 minutes
+						(set intf_music_playing true)
+					)
+				)
+			)
+			FALSE
+		)
 	)
 )
-
 
 ;------------------------------------- MUSIC SCRIPTS -------------------------------------------------------------------------
 
@@ -381,3 +515,196 @@
 ;     (sleep_until (>= (device_get_position obj_dm) 0.307273) 1)
 ;     (effect_new_on_object_marker levels\solo\m50\fx\civilian_ship_crash\covenant_weapon_fire\covenant_weapon_fire obj_dm "")
 ; )
+
+;=============================================================================================================================
+;============================================ ANNOUNCEMENT SCRIPTS ===========================================================
+;=============================================================================================================================
+
+;===================================== BEGIN ANNOUNCER =======================================================================
+
+; this script assumes that at the start of a SET the rounds and waves are set to -- 0 -- 
+; also, at the start of a ROUND waves are set to -- 0 -- 
+
+
+; 0 default, 1 new, 2 end. ;; For fuk sake, conserve variable pointers and just use more memory. ITS A PC!!!!!
+(global short s_survival_state_set 0)
+(global short s_survival_state_round 0)
+(global short s_survival_state_wave 0)
+(global short s_survival_state_lives 0)
+
+;; use a state machine to manage inbound-outbound waves.
+(script dormant routine_incd_announcer
+	(sleep_until 
+		(begin 
+			(if (= s_survival_state_wave 2) ;; main loop has marked the end of a wave.
+				(begin 
+					(if (< (survival_mode_wave_get) 5)
+						(set s_survival_state_wave 2) ;; leave as is
+						(begin 
+							(if (< (survival_mode_round_get) 3)
+								(set s_survival_state_round 2)
+								(set s_survival_state_set 2)
+							)
+						)
+					)
+					(survival_mode_wave_music_stop) ; Stop music
+				)
+			)
+			(if (= s_survival_state_wave 1)
+				(begin 
+					(survival_mode_wave_music_start) ; Begin music loop
+					(print_if dbg_ff "announce new wave...")
+					(if (not (survival_mode_current_wave_is_initial)) ; TODO make sure this is correct (updated for 0 index)
+						(begin
+							; attempt to award the hero medal 
+							(survival_mode_award_hero_medal)
+								(sleep 1)
+								
+							; respawn dead players (WE DO NOT ADD LIVES HERE) 
+							(event_survival_reinforcements)
+							(survival_mode_respawn_dead_players)
+								(sleep (* (random_range 3 5) 30))
+						)
+						(set s_survival_state_round 1)
+					)
+					(set s_survival_state_wave 0)
+				)
+			)
+			(if (and (= s_survival_state_round 1) (= (survival_mode_round_get) 0))
+				(begin 
+					(set s_survival_state_set 1)
+					(set s_survival_state_round 0)
+				)
+			)
+			(if (= s_survival_state_set 1)
+				(begin 
+					(print_if dbg_ff "announce new set...")
+					(surival_set_music)
+					(event_countdown_timer)
+					(event_survival_new_set)
+					(set s_survival_state_set 0)
+
+				)
+			)
+			(if (= s_survival_state_round 1)
+				(begin 
+					(print_if dbg_ff "announce new round...")
+					(event_countdown_timer)
+					(event_survival_new_round)
+					(set s_survival_state_round 0)
+				)
+			)
+			(if (= s_survival_state_set 2)
+				(begin 
+					(print_if dbg_ff "announce end set...")
+					(event_survival_end_set)
+					(set s_survival_state_set 0)
+
+				)
+			)
+			(if (= s_survival_state_round 2)
+				(begin 
+					(print_if dbg_ff "announce end round...")
+					(event_survival_end_round)
+					(set s_survival_state_round 0)
+
+				)
+			)
+			(if (= s_survival_state_wave 2)
+				(begin 
+					(print_if dbg_ff "announce end wave...")
+					(set s_survival_state_wave 0)
+
+				)
+			)
+
+			;; announce lives state
+			(if (or (= s_survival_state_lives 0) (> (survival_mode_lives_get player) 5))
+				(set s_survival_state_lives 1)
+			)
+			(if (= s_survival_state_lives 1)
+				(if (and (<= (survival_mode_lives_get player) 5) (>= (survival_mode_lives_get player) 0) )
+					(begin 
+						(print_if dbg_ff "5 lives left...")
+						(event_survival_5_lives_left)
+						(set s_survival_state_lives 2)
+					)
+				)
+			)
+			(if (= s_survival_state_lives 2)
+				(if (and (<= (survival_mode_lives_get player) 1) (>= (survival_mode_lives_get player) 0) )
+					(begin 
+						(print_if dbg_ff "1 life left...")
+						(event_survival_1_life_left)
+						(set s_survival_state_lives 3)
+					)
+				)
+			)
+			(if (= s_survival_state_lives 3)
+				(if (= (survival_mode_lives_get player) 0) 
+					(begin 
+						(print_if dbg_ff "0 lives left...")
+						(event_survival_0_lives_left)
+						(set s_survival_state_lives 4)
+					)
+				)
+			)
+			(if (= s_survival_state_lives 4)
+				(if (= (players_human_living_count) 1)
+					(begin 
+						(print_if dbg_ff "last man standing...")
+						(event_survival_last_man_standing)
+						(set s_survival_state_lives 5) ;; exit fsm lol. this was bug.
+					)
+				)
+			)
+			(if (and (> s_survival_state_lives 1) (> (survival_mode_lives_get player) 1))
+				(set s_survival_state_lives 2)
+			)
+			b_survival_kill_threads
+		)
+	30) ; sleep one second intervals.
+
+	;; If thread is over, game is over.
+	(survival_mode_wave_music_stop)
+	(submit_incident "survival_mm_game_complete") ;; game over
+)
+
+
+;------------------------------------- END ANNOUNCER -------------------------------------------------------------------------
+
+
+; == Weather events.
+
+(script dormant routine_wea_dst_thunder
+	(sleep_until 
+		(begin 
+			(begin_random_count 1
+				(begin 
+					(sound_impulse_start sound\levels\solo\weather\thunder_claps.sound NONE 1)
+					(sleep (*30 2.5))
+					(sound_impulse_start sound\levels\solo\weather\rain\details\thunder.sound NONE 1)
+				)
+				(begin 
+					(sound_impulse_start sound\levels\solo\weather\rain\details\thunder.sound NONE 1)
+				)
+				(begin 
+					(sound_impulse_start sound\levels\solo\weather\rain\details\thunder.sound NONE 1)
+				)
+				(begin 
+					(sound_impulse_start sound\levels\solo\weather\rain\details\thunder.sound NONE 1)
+				)
+				(begin 
+					(sound_impulse_start sound\levels\solo\weather\rain\details\thunder.sound NONE 1)
+				)
+				(begin 
+					(sound_impulse_start sound\levels\solo\weather\rain\details\thunder.sound NONE 1)
+				)
+			)
+			FALSE
+		)
+		(random_range (* 30 60) (* 30 60 2))
+	)
+	
+	
+)
