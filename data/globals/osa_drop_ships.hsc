@@ -248,7 +248,9 @@
 				)
 	
 	(if b_debug_dropships (print "opening phantom..."))
-	(unit_open phantom)
+	(if (!= drop_side "chute")
+		(unit_open phantom)
+	)
 	(sleep 60)
 	; determine how to unload the phantom 
 	(cond
