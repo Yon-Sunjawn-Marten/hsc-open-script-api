@@ -64,8 +64,11 @@
 	(sound_looping_stop osa_incd_current_m)
 )
 
+(global boolean osa_incd_check_endgame TRUE)
 (script stub boolean plugin_incd_game_abt_end
-	FALSE ;; use this to set ending game music near victory.
+	;; use this to set ending game music near victory.
+	;; default is to play music near timeout.
+	(< (- (* (survival_mode_get_time_limit) 60) osa_bgm_round_timer) (* 5 60))
 )
 
 (global boolean dbg_incidents FALSE)
@@ -431,7 +434,7 @@
 	(sleep_until intf_music_playing)
 	(sound_looping_start osa_incd_current_m NONE 1.0)
 	(sleep_until (not intf_music_playing) 30 intf_music_sleep) ;; allow interrupts, use the timeout to end it naturally :)
-	(sound_looping_end osa_incd_current_m NONE 1.0)
+	(sound_looping_stop osa_incd_current_m)
 	(set osa_incd_current_m NONE)
 	(set intf_music_playing false)
 )
@@ -456,9 +459,13 @@
 	)
 )
 
-(script static void osa_incd_force_music_switch
-	(set intf_music_playing false)
-	(sleep_until (= NONE osa_incd_current_m)) ;; sleep until music disengages.
+(script static void (osa_incd_force_music_switch (looping_sound lpsnd))
+	(if (!= lpsnd osa_incd_current_m)
+		(begin 
+			(set intf_music_playing false)
+			(sleep_until (= NONE osa_incd_current_m)) ;; sleep until music disengages.
+		)
+	)
 )
 
 (script dormant routine_incd_music_frm_state
@@ -468,15 +475,16 @@
 				(intf_en_game_starting_m
 					(begin 
 						(set intf_en_game_starting_m false)
-						(osa_incd_force_music_switch)
+						(osa_incd_force_music_switch intf_incd_intro_m)
 						(set osa_incd_current_m intf_incd_intro_m)
 						(set intf_music_sleep (* 30 60 1)) ;; play 1 minute.
 						(set intf_music_playing true)
 					)
 				)
-				((plugin_incd_game_abt_end)
+				((and osa_incd_check_endgame (plugin_incd_game_abt_end))
 					(begin 
-						(osa_incd_force_music_switch)
+						(set osa_incd_check_endgame false)
+						(osa_incd_force_music_switch intf_incd_endgame_m)
 						(set osa_incd_current_m intf_incd_endgame_m)
 						(set intf_music_sleep (* 30 60 30)) ;; play 30 minutes.
 						(set intf_music_playing true)
@@ -484,7 +492,7 @@
 				)
 				((survival_mode_current_wave_is_initial)
 					(begin 
-						(osa_incd_force_music_switch)
+						(osa_incd_force_music_switch intf_incd_wave_m)
 						(set osa_incd_current_m intf_incd_wave_m)
 						(set intf_music_sleep (* 30 60 2)) ;; play 2 minutes
 						(set intf_music_playing true)
@@ -492,7 +500,7 @@
 				)
 				((survival_mode_current_wave_is_boss)
 					(begin 
-						(osa_incd_force_music_switch)
+						(osa_incd_force_music_switch intf_incd_round_m)
 						(set osa_incd_current_m intf_incd_round_m)
 						(set intf_music_sleep (* 30 60 2)) ;; play 2 minutes
 						(set intf_music_playing true)
@@ -538,48 +546,55 @@
 		(begin 
 			(if (= s_survival_state_wave 2) ;; main loop has marked the end of a wave.
 				(begin 
+					(survival_mode_end_wave)
 					(if (< (survival_mode_wave_get) 5)
 						(set s_survival_state_wave 2) ;; leave as is
 						(begin 
 							(if (< (survival_mode_round_get) 3)
 								(set s_survival_state_round 2)
-								(set s_survival_state_set 2)
+								(begin 
+									(survival_mode_end_set)
+									(set s_survival_state_set 2)
+								)
 							)
 						)
 					)
-					(survival_mode_wave_music_stop) ; Stop music
+					(intf_incd_stop_current_music) ; Stop music
 				)
 			)
 			(if (= s_survival_state_wave 1)
-				(begin 
-					(survival_mode_wave_music_start) ; Begin music loop
-					(print_if dbg_ff "announce new wave...")
-					(if (not (survival_mode_current_wave_is_initial)) ; TODO make sure this is correct (updated for 0 index)
-						(begin
-							; attempt to award the hero medal 
-							(survival_mode_award_hero_medal)
-								(sleep 1)
-								
-							; respawn dead players (WE DO NOT ADD LIVES HERE) 
-							(event_survival_reinforcements)
-							(survival_mode_respawn_dead_players)
-								(sleep (* (random_range 3 5) 30))
+				(if (and (survival_mode_current_wave_is_initial) (= (survival_mode_round_get) 0))
+					(begin (set s_survival_state_set 1)) ; start set instead
+					(begin 
+						(print_if dbg_incidents "announce new wave...")
+						(survival_mode_begin_new_wave)
+						(if (not (survival_mode_current_wave_is_initial)) ; TODO make sure this is correct (updated for 0 index)
+							(begin
+								; attempt to award the hero medal 
+								(survival_mode_award_hero_medal)
+									(sleep 1)
+									
+								; respawn dead players (WE DO NOT ADD LIVES HERE) 
+								(event_survival_reinforcements)
+								(survival_mode_respawn_dead_players)
+									(sleep (* (random_range 3 5) 30))
+							)
+							(set s_survival_state_round 1)
 						)
-						(set s_survival_state_round 1)
+						(set s_survival_state_wave 0)
 					)
-					(set s_survival_state_wave 0)
 				)
 			)
 			(if (and (= s_survival_state_round 1) (= (survival_mode_round_get) 0))
 				(begin 
-					(set s_survival_state_set 1)
+					(set s_survival_state_set 1); start set instead
 					(set s_survival_state_round 0)
 				)
 			)
 			(if (= s_survival_state_set 1)
 				(begin 
-					(print_if dbg_ff "announce new set...")
-					(surival_set_music)
+					(print_if dbg_incidents "announce new set...")
+					(survival_mode_begin_new_wave)
 					(event_countdown_timer)
 					(event_survival_new_set)
 					(set s_survival_state_set 0)
@@ -588,7 +603,7 @@
 			)
 			(if (= s_survival_state_round 1)
 				(begin 
-					(print_if dbg_ff "announce new round...")
+					(print_if dbg_incidents "announce new round...")
 					(event_countdown_timer)
 					(event_survival_new_round)
 					(set s_survival_state_round 0)
@@ -596,7 +611,7 @@
 			)
 			(if (= s_survival_state_set 2)
 				(begin 
-					(print_if dbg_ff "announce end set...")
+					(print_if dbg_incidents "announce end set...")
 					(event_survival_end_set)
 					(set s_survival_state_set 0)
 
@@ -604,7 +619,7 @@
 			)
 			(if (= s_survival_state_round 2)
 				(begin 
-					(print_if dbg_ff "announce end round...")
+					(print_if dbg_incidents "announce end round...")
 					(event_survival_end_round)
 					(set s_survival_state_round 0)
 
@@ -612,7 +627,7 @@
 			)
 			(if (= s_survival_state_wave 2)
 				(begin 
-					(print_if dbg_ff "announce end wave...")
+					(print_if dbg_incidents "announce end wave...")
 					(set s_survival_state_wave 0)
 
 				)
@@ -625,7 +640,7 @@
 			(if (= s_survival_state_lives 1)
 				(if (and (<= (survival_mode_lives_get player) 5) (>= (survival_mode_lives_get player) 0) )
 					(begin 
-						(print_if dbg_ff "5 lives left...")
+						(print_if dbg_incidents "5 lives left...")
 						(event_survival_5_lives_left)
 						(set s_survival_state_lives 2)
 					)
@@ -634,7 +649,7 @@
 			(if (= s_survival_state_lives 2)
 				(if (and (<= (survival_mode_lives_get player) 1) (>= (survival_mode_lives_get player) 0) )
 					(begin 
-						(print_if dbg_ff "1 life left...")
+						(print_if dbg_incidents "1 life left...")
 						(event_survival_1_life_left)
 						(set s_survival_state_lives 3)
 					)
@@ -643,7 +658,7 @@
 			(if (= s_survival_state_lives 3)
 				(if (= (survival_mode_lives_get player) 0) 
 					(begin 
-						(print_if dbg_ff "0 lives left...")
+						(print_if dbg_incidents "0 lives left...")
 						(event_survival_0_lives_left)
 						(set s_survival_state_lives 4)
 					)
@@ -652,7 +667,7 @@
 			(if (= s_survival_state_lives 4)
 				(if (= (players_human_living_count) 1)
 					(begin 
-						(print_if dbg_ff "last man standing...")
+						(print_if dbg_incidents "last man standing...")
 						(event_survival_last_man_standing)
 						(set s_survival_state_lives 5) ;; exit fsm lol. this was bug.
 					)
@@ -661,13 +676,9 @@
 			(if (and (> s_survival_state_lives 1) (> (survival_mode_lives_get player) 1))
 				(set s_survival_state_lives 2)
 			)
-			b_survival_kill_threads
+			FALSE
 		)
 	30) ; sleep one second intervals.
-
-	;; If thread is over, game is over.
-	(survival_mode_wave_music_stop)
-	(submit_incident "survival_mm_game_complete") ;; game over
 )
 
 
@@ -682,7 +693,7 @@
 			(begin_random_count 1
 				(begin 
 					(sound_impulse_start sound\levels\solo\weather\thunder_claps.sound NONE 1)
-					(sleep (*30 2.5))
+					(sleep (* 30 2.5))
 					(sound_impulse_start sound\levels\solo\weather\rain\details\thunder.sound NONE 1)
 				)
 				(begin 
