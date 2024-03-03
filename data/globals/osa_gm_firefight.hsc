@@ -41,14 +41,14 @@
 ;; ========================== REQUIRED in Sapien ==================================
 ; REQUIRED AI/Squad Groups
 ; If you intend to use FF plugin:
-; waves go to gr_survival_remaining at end of wave. Used to trigger some objective tasks that make the AI come near you.
+; waves go to gr_warzone_remaining at end of wave. Used to trigger some objective tasks that make the AI come near you.
 ; generally waves spawn in separate squads and thus can attempt tasks that are limited to 4 ai for ex.
-; gr_survival_remaining might fill up to more than 4, so they would be ineligible to do them.
+; gr_warzone_remaining might fill up to more than 4, so they would be ineligible to do them.
 ; not setting a task limit can result in a rush with dozens of combatants, user beware.
-; gr_survival_remaining     -> gr_survival_elites
+; gr_warzone_remaining     -> gr_dir_elites
 
-; gr_survival_waves         -> gr_survival_elites
-; gr_survival_bonus         -> gr_survival_elites
+; gr_warzone_waves         -> gr_dir_elites
+; gr_warzone_bonus         -> gr_dir_elites
 
 ; intf_ff_objective -- the objective with a hold_task
 
