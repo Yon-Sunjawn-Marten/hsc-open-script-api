@@ -110,7 +110,13 @@
 ); Your - Wel - come
 
 (script static string (osa_ds_get_vehicle_type (vehicle dropship))
-	(cond 
+	(cond
+		((= NONE dropship) 
+			(begin 
+				(print "Dropship is none, was it spawned?")
+				"NONE"
+			)
+		)
 		((ai_vehicle_reserve_seat dropship "phantom_p_ml_f" FALSE)
 			OSA_DROP_SHIP_PHANTOM
 		)
@@ -122,8 +128,7 @@
 		)
 		(TRUE
 			(begin 
-				(print "FAILED TO FIND SHIP TYPE. is the dropship none?:")
-				(inspect (= NONE dropship))
+				(print "FAILED TO FIND SHIP TYPE.")
 				"NONE"
 			)
 		)
