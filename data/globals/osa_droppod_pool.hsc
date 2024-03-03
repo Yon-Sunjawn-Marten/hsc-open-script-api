@@ -26,6 +26,15 @@
 ; Supply pods are found under scenery
 ; Drop pods are vehicles.
 
+; Placement Scripts:
+(script command_script cs_pool_drop_on_spawn_sq
+	(osa_pool_try_drop_a_pod (ai_vehicle_get ai_current_actor) OSA_POOL_DROP_SQUAD)
+) ; for squad pods.
+
+(script command_script cs_pool_drop_on_spawn_solo
+	(osa_pool_try_drop_a_pod (ai_vehicle_get ai_current_actor) OSA_POOL_DROP_TROOP)
+) ; for elite pods.
+
 ;; -------------------------- REQUIRED in Sapien ----------------------------------
 
 ;; ========================================================================
@@ -160,13 +169,6 @@
 	(osa_pool_try_drop_a_pod pod_name type)
 )
 
-(script command_script cs_pool_drop_on_spawn_sq
-	(osa_pool_try_drop_a_pod (ai_vehicle_get ai_current_actor) OSA_POOL_DROP_SQUAD)
-)
-
-(script command_script cs_pool_drop_on_spawn_solo
-	(osa_pool_try_drop_a_pod (ai_vehicle_get ai_current_actor) OSA_POOL_DROP_TROOP)
-)
 
 (script stub string_id intf_plugin_pool_pod_options
 	(begin_random_count 1
