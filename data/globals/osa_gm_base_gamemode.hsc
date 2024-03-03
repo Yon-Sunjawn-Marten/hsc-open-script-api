@@ -30,6 +30,11 @@
     (set dbg_bgm dbg_en)
     (garbage_collect_now) ; Garbage collect, in case anything is left over from previous rounds (sob)
 
+	(ai_allegiance human player)
+	(ai_allegiance player human)
+	(ai_allegiance covenant covenant_player)
+	(ai_allegiance covenant_player covenant)
+    
     (if (< (survival_mode_get_shared_team_life_count) 0)
 		(survival_mode_lives_set player -1)
 		(survival_mode_lives_set player (survival_mode_get_shared_team_life_count))		
@@ -60,9 +65,10 @@
     (intf_load_incd dbg_en use_anouncer use_auto_music use_weather)
     (wake routine_bgm_end_game)
     (wake routine_bfm_track_time)
-
+    (wake routine_bfm_detect_game_start)
+    (wake routine_display_score_state)
     (sleep_until intf_bgm_game_start) ;; sleeps until a player spawns. Holds rest of loading for this.
-)
+) ; load this script in your game mode init. It can be used to block game start until a player spawns.
 
 ;; --- REQUIRED INPUT VARS ---
 
@@ -102,9 +108,6 @@
         (event_survival_elites_win_normal)
     )
 )
-(script stub void plugin_bgm_end_game_monitor
-    (print "implement a custom end game monitor")
-)
 (script stub boolean plugin_bgm_sudden_death_cond
     (print "no sudden death by default")
     FALSE
@@ -115,6 +118,18 @@
 ;------------------------------ PLUGINS ----------------------------------
 
 ;; --- INPUT VARS --- (plugins)
+;; Common variables among game types that can allow you to put multiple missions on the same map file.
+; osa_bgm_red_score
+
+
+(global short intf_bgm_score_win  5400) ;; 3600 originally. 5400 brings it close to time out.
+(global short intf_bgm_score_tier (/ intf_bgm_score_win 8)) ;; for progress based rewards/triggers.
+
+(global short intf_bgm_red_score 0)
+(global short intf_bgm_blue_score 0)
+
+(global short INTF_BGM_SIDE_RED 1)
+(global short INTF_BGM_SIDE_BLUE -1)
 
 ;; ========================== PUBLIC VARIABLES Read-Only ==================================
 
@@ -145,7 +160,7 @@
 )
 
 (script dormant routine_bfm_detect_game_start
-    (sleep_until (> (players_human_living_count) 0))
+    (sleep_until (> osa_con_players_all 0))
     (set intf_bgm_game_start true)
 ) ; blocks game over from human deaths when humans aren't present.
 
@@ -232,8 +247,8 @@
     (sleep_until intf_bgm_game_start)
     (sleep_until 
         (begin 
-            (if (and (osa_utils_players_dead) (osa_utils_players_not_respawning))
-                (intf_bgm_set_game_end_state 2)
+            (if (and (osa_utils_players_dead) (osa_utils_players_not_respawning) (> osa_con_players_human 0))
+                (intf_bgm_set_game_end_state 2) ; a human had to be playing for elites to win by no respawn.
             )
             (if (or 
                 (and (> (survival_mode_get_time_limit) 0) (>= osa_bgm_round_timer (* (survival_mode_get_time_limit) 60)))
@@ -245,6 +260,15 @@
                 )
             )
             intf_bgm_kill_threads
+        )
+    )
+)
+
+(script dormant routine_display_score_state
+    (sleep_until 
+        (begin 
+            (osa_incid_check_win_status (min (max -1 (- intf_bgm_red_score intf_bgm_blue_score)) 1))
+            FALSE
         )
     )
 )
