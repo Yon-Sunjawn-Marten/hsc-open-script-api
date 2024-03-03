@@ -22,6 +22,44 @@
 ; 2) vehicles loaded into the map: pelican, phantom, fork.  (NOT PLACED IN MAP - LOADED AS ASSETS)
 ; seat_mapping works at compile time, and it needs actual references from vehicles :\
 
+; Placement_Script:
+(script command_script intf_pool_cs_transport_init
+	(print_if dbg_pool "Vehicle starting pool")
+	(cond 
+		((= ai_current_squad intf_pl_t_veh_0) 
+			(begin 
+				(print_if dbg_pool "unit do pool_0")
+				(cs_run_command_script ai_current_actor intf_pool_cs_transport_0)
+			)
+		)
+		((= ai_current_squad intf_pl_t_veh_1) 
+			(begin 
+				(print_if dbg_pool "unit do pool_1")
+				(cs_run_command_script ai_current_actor intf_pool_cs_transport_1)
+			)
+		)
+		((= ai_current_squad intf_pl_t_veh_2) 
+			(begin 
+				(print_if dbg_pool "unit do pool_2")
+				(cs_run_command_script ai_current_actor intf_pool_cs_transport_2)
+			)
+		)
+		((= ai_current_squad intf_pl_t_veh_3) 
+			(begin 
+				(print_if dbg_pool "unit do pool_3")
+				(cs_run_command_script ai_current_actor intf_pool_cs_transport_3)
+			)
+		)
+		(TRUE
+			(begin 
+				(print "CRITICAL ERROR: CS assigned to an unlisted transport!") ; at least I'll tell you what type of transport it is that isn't registered. :P
+				(inspect (osa_ds_get_vehicle_type (ai_vehicle_get ai_current_actor)))
+			)
+			
+		)
+	)
+) ;use this on all transports you want to register (under the placement_script option.)
+
 ;; -------------------------- REQUIRED in Sapien ----------------------------------
 
 
@@ -129,6 +167,67 @@
         )
     )
 ) ; this makes transport use default settings
+
+(script static string (intf_pool_get_load_type_for_inf (short index)) ;; for infantry
+	(cond 
+        ((= 0 index)
+			(cond 
+				((!= "vany" intf_pl_t_drop_side_a_0)
+					intf_pl_t_drop_side_a_0
+				)
+				((!= "vany" intf_pl_t_drop_side_b_0)
+					intf_pl_t_drop_side_b_0
+				)
+				(TRUE
+					""
+				)
+			)
+        )
+        ((= 1 index)
+			(cond 
+				((!= "vany" intf_pl_t_drop_side_a_1)
+					intf_pl_t_drop_side_a_1
+				)
+				((!= "vany" intf_pl_t_drop_side_b_1)
+					intf_pl_t_drop_side_b_1
+				)
+				(TRUE
+					""
+				)
+			)
+        )
+        ((= 2 index)
+			(cond 
+				((!= "vany" intf_pl_t_drop_side_a_2)
+					intf_pl_t_drop_side_a_2
+				)
+				((!= "vany" intf_pl_t_drop_side_b_2)
+					intf_pl_t_drop_side_b_2
+				)
+				(TRUE
+					""
+				)
+			)
+        )
+        ((= 3 index)
+			(cond 
+				((!= "vany" intf_pl_t_drop_side_a_3)
+					intf_pl_t_drop_side_a_3
+				)
+				((!= "vany" intf_pl_t_drop_side_b_3)
+					intf_pl_t_drop_side_b_3
+				)
+				(TRUE
+					""
+				)
+			)
+        )
+        (TRUE
+            (print "ERROR: Squad not in pool")
+			""
+        )
+    )
+)
 
 (script static void (intf_pool_remove_transport (ai squad))
     (cond 
@@ -497,42 +596,7 @@
 	)
 )
 
-(script command_script intf_pool_cs_transport_init
-	(print_if dbg_pool "Vehicle starting pool")
-	(cond 
-		((= ai_current_squad intf_pl_t_veh_0) 
-			(begin 
-				(print_if dbg_pool "unit do pool_0")
-				(cs_run_command_script ai_current_actor intf_pool_cs_transport_0)
-			)
-		)
-		((= ai_current_squad intf_pl_t_veh_1) 
-			(begin 
-				(print_if dbg_pool "unit do pool_1")
-				(cs_run_command_script ai_current_actor intf_pool_cs_transport_1)
-			)
-		)
-		((= ai_current_squad intf_pl_t_veh_2) 
-			(begin 
-				(print_if dbg_pool "unit do pool_2")
-				(cs_run_command_script ai_current_actor intf_pool_cs_transport_2)
-			)
-		)
-		((= ai_current_squad intf_pl_t_veh_3) 
-			(begin 
-				(print_if dbg_pool "unit do pool_3")
-				(cs_run_command_script ai_current_actor intf_pool_cs_transport_3)
-			)
-		)
-		(TRUE
-			(begin 
-				(print "CRITICAL ERROR: CS assigned to an unlisted transport!") ; at least I'll tell you what type of transport it is that isn't registered. :P
-				(inspect (osa_ds_get_vehicle_type (ai_vehicle_get ai_current_actor)))
-			)
-			
-		)
-	)
-) ;use this on all transports you want to register under the placement_script option.
+
 (script command_script intf_pool_cs_transport_0
 	(cs_enable_pathfinding_failsafe TRUE)
 	;(cs_ignore_obstacles TRUE)
