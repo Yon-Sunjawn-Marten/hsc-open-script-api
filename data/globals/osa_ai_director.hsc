@@ -86,6 +86,9 @@
 ; Have a script that wants to override team balance?
 ; Extraction does!
 (global short intf_borrow_bipeds  0) ;; set this to reserve bipeds for external use.
+(global short intf_dir_migration_rate 30) ; period of time it takes for squads to move.
+(global short intf_dir_migration_wait (+ intf_dir_migration_rate 5)) ; period of time it takes for squads to move.
+(global boolean intf_dir_balance_players true) ;; auto player balancing?
 
 ; AI dedicated to transportation services. put both to 0 if you dont plan to use.
 ; Sometimes, you can leverage this to guarantee a min AI count to a side.
@@ -94,6 +97,7 @@
 (global short intf_num_transport_elites      2) ; 2 Phantoms with gunners,  Forks are cheaper bc one driver. Only looked at when looking to spawn more people.
 (global short intf_ai_per_transport_spartans 1)
 (global short intf_ai_per_transport_elites   3) ; use spirits if you want to just have 1. or a phantom without gunners.
+
 
 ; This variable is largely map dependent. Boneyard was 43. Do not exceed or meet that.
 ; by default, this will be 42 -- including players. Don't exceed 50 AI in one spot on sapien.
@@ -328,6 +332,9 @@
         ((= intf_obj_dir_4 NONE)
             (set intf_obj_dir_4 obj)
         )
+        ((= intf_obj_dir_5 NONE)
+            (set intf_obj_dir_5 obj)
+        )
         (TRUE
             (print "ERROR: Out of objectives memory")
         )
@@ -480,6 +487,7 @@
 (global ai intf_obj_dir_2 NONE)
 (global ai intf_obj_dir_3 NONE)
 (global ai intf_obj_dir_4 NONE)
+(global ai intf_obj_dir_5 NONE)
 
 ;; ========================== Internal Use CONSTANTS/VARS ==================================
 ; You don't need to read or know any of the internals. The abv functions are the result of all the code below.
@@ -672,7 +680,12 @@
     (set osa_part_total_players_p2 (max (+ osa_con_players_human osa_con_players_elite) 1)) ; (+  2) ## I think hard bias is better. ; max 1 prevents crash.
     (set osa_part_transport_ai (+ (* intf_num_transport_spartans intf_ai_per_transport_spartans) (* intf_num_transport_elites intf_ai_per_transport_elites)))
     (set osa_available_bipeds (- (- (- intf_part_max_bipeds osa_part_total_players_p2) osa_part_transport_ai) intf_borrow_bipeds) )
-    (set osa_current_player_balance (/ (- osa_con_players_human osa_con_players_elite) (+ 4 osa_part_total_players_p2)))
+    
+    (if intf_dir_balance_players
+        (set osa_current_player_balance (/ (- osa_con_players_human osa_con_players_elite) (+ 4 osa_part_total_players_p2)))
+        (set osa_current_player_balance 0) ; no auto balance
+    )
+    
 
     (set osa_current_player_balance (max osa_current_player_balance -0.38))
     (set osa_current_player_balance (min osa_current_player_balance 0.38)) ; clamp between these as it provides best results.
@@ -758,6 +771,7 @@
     (wake osa_dir_ref_obj_2)
     (wake osa_dir_ref_obj_3)
     (wake osa_dir_ref_obj_4)
+    (wake osa_dir_ref_obj_5)
 )
 (script dormant osa_dir_ref_obj_0
     (sleep_until 
@@ -845,6 +859,23 @@
     )
     (print_if dbg_dir "Exit Obj Refresh _4")
 )
+(script dormant osa_dir_ref_obj_5
+    (sleep_until 
+        (begin 
+            (if (!= intf_obj_dir_5 NONE)
+                (begin 
+                    (sleep_until (= 0 (ai_task_count intf_obj_dir_5)))
+                    (sleep 90) ; a cooldown period is required.
+                    (print_if dbg_dir "refresh gate_5")
+                    (ai_reset_objective intf_obj_dir_5)
+                    FALSE ; stay
+                )
+                TRUE; break
+            )
+        )
+    )
+    (print_if dbg_dir "Exit Obj Refresh _5")
+)
 
 (script static void osa_director_auto_migration
     (wake osa_dir_migrate_sq_0)
@@ -871,6 +902,7 @@
                 TRUE; break
             )
         )
+        intf_dir_migration_rate
     )
     (print_if dbg_dir "Exit Migrate _0")
 )
@@ -889,6 +921,7 @@
                 TRUE; break
             )
         )
+        intf_dir_migration_rate
     )
     (print_if dbg_dir "Exit Migrate _1")
 )
@@ -907,6 +940,7 @@
                 TRUE; break
             )
         )
+        intf_dir_migration_rate
     )
     (print_if dbg_dir "Exit Migrate _2")
 )
@@ -925,6 +959,7 @@
                 TRUE; break
             )
         )
+        intf_dir_migration_rate
     )
     (print_if dbg_dir "Exit Migrate _3")
 )
@@ -943,6 +978,7 @@
                 TRUE; break
             )
         )
+        intf_dir_migration_rate
     )
     (print_if dbg_dir "Exit Migrate _4")
 )
@@ -961,6 +997,7 @@
                 TRUE; break
             )
         )
+        intf_dir_migration_rate
     )
     (print_if dbg_dir "Exit Migrate _5")
 )
@@ -979,6 +1016,7 @@
                 TRUE; break
             )
         )
+        intf_dir_migration_rate
     )
     (print_if dbg_dir "Exit Migrate _6")
 )

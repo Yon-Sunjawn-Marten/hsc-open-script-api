@@ -148,6 +148,24 @@
 	)
 ); cleanup might not be so great for this.
 
+
+;; ------------------------------------------------------------------------
+;; -------------------------- INTERFACES ----------------------------------
+;; ------------------------------------------------------------------------
+
+;=========================================================================
+;============================== PLUGINS ==================================
+;=========================================================================
+
+
+;------------------------------ PLUGINS ----------------------------------
+
+;; --- INPUT VARS --- (plugins)
+
+
+;; ========================== PUBLIC Scripts ==================================
+
+
 (script static long (osa_utils_get_marker_type (string name))
 	(cond
 		((= name "neutralize")
@@ -396,18 +414,59 @@
 	)
 )
 
-;; ------------------------------------------------------------------------
-;; -------------------------- INTERFACES ----------------------------------
-;; ------------------------------------------------------------------------
+(script static void (osa_utils_play_sound_for_humans (sound snd))
+	(if (!= NONE (player_human 0))
+		(sound_impulse_start snd (player_human 0) 0.25)
+	)
+	(if (!= NONE (player_human 1))
+		(sound_impulse_start snd (player_human 1) 0.25)
+	)
+	(if (!= NONE (player_human 2))
+		(sound_impulse_start snd (player_human 2) 0.25)
+	)
+	(if (!= NONE (player_human 3))
+		(sound_impulse_start snd (player_human 3) 0.25)
+	)
+	(if (!= NONE (player_human 4))
+		(sound_impulse_start snd (player_human 4) 0.25)
+	)
+	(if (!= NONE (player_human 5))
+		(sound_impulse_start snd (player_human 5) 0.25)
+	)
+	(if (!= NONE (player_human 6))
+		(sound_impulse_start snd (player_human 6) 0.25)
+	)
+	(if (!= NONE (player_human 7))
+		(sound_impulse_start snd (player_human 7) 0.25)
+	)
+)
 
-;=========================================================================
-;============================== PLUGINS ==================================
-;=========================================================================
-
-
-;------------------------------ PLUGINS ----------------------------------
-
-;; --- INPUT VARS --- (plugins)
+(script static void (osa_utils_play_sound_for_elites (sound snd))
+	(if (!= NONE (player_elite 0))
+		(sound_impulse_start snd (player_elite 0) 0.25)
+	)
+	(if (!= NONE (player_elite 1))
+		(sound_impulse_start snd (player_elite 1) 0.25)
+	)
+	(if (!= NONE (player_elite 2))
+		(sound_impulse_start snd (player_elite 2) 0.25)
+	)
+	(if (!= NONE (player_elite 3))
+		(sound_impulse_start snd (player_elite 3) 0.25)
+	)
+	(if (!= NONE (player_elite 4))
+		(sound_impulse_start snd (player_elite 4) 0.25)
+	)
+	(if (!= NONE (player_elite 5))
+		(sound_impulse_start snd (player_elite 5) 0.25)
+	)
+	(if (!= NONE (player_elite 6))
+		(sound_impulse_start snd (player_elite 6) 0.25)
+	)
+	(if (!= NONE (player_elite 7))
+		(sound_impulse_start snd (player_elite 7) 0.25)
+	)
+)
 
 ;; ========================== PUBLIC VARIABLES Read-Only ==================================
 
@@ -568,6 +627,8 @@
 ; 	(weather_animate_force off 1 0)	
 
 ; )
+
+
 
 (global short osa_update_counter_max 20)
 (global short osa_update_counter      0)

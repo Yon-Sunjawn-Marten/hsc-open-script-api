@@ -1,6 +1,5 @@
 ; Copyright 2024 Yon-Sunjawn-Marten
 ; IMPORTS
-; include osa_drop_ships
 ; include osa_utils
 ; include osa_ai_director
 
@@ -432,20 +431,6 @@
 	(if (> marker -1)
 		(intf_utils_callout_object_p squad marker)
 	)
-)
-
-(script static void (osa_hazpl_handle_tran (ai squad) (short type) (short side) (vehicle transport) (short marker))
-	(if (osa_director_type_is_vehicle type)
-		(begin 
-			(sleep_until (intf_director_try_spawn_vehicle_x side type 1) 5)
-			(osa_ds_load_dropship_place transport "vany" squad NONE NONE)
-		)
-		(begin 
-			(sleep_until (intf_director_can_spawn_ai_x side (osa_get_vehicle_seats type)) 5)
-			(osa_ds_load_dropship_place transport "any" squad NONE NONE)
-		)
-	)
-	(osa_hazpl_mark_spawned_squad squad marker)
 )
 
 (script static void (osa_hazpl_handle_normal (ai squad) (short type) (short side) (short marker))
