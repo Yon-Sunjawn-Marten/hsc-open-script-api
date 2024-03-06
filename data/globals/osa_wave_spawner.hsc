@@ -23,11 +23,11 @@
 ; gr_waves_trans_blue : parent your transports for blue team under this. If no transports inside, then it is ignored.
 
 ; gr_waves_red  -> gr_dir_spartans ; this parent squad ships all AI to gr_dir_spartans.
-; intf_waves_red_spawns = gr_waves_red_spawns -> gr_waves_red: fill this with spawnable squads.
+; gr_waves_red_spawns -> gr_waves_red: fill this with spawnable squads.
 ; gr_waves_veh_red_spawns -> gr_waves_red : for vehicles.
 
 ; gr_waves_blue -> gr_dir_elites ; this parent squad ships all AI to gr_dir_elites.
-; intf_waves_blue_spawns = gr_waves_blue_spawns -> gr_waves_blue: fill this with spawnable squads.
+; gr_waves_blue_spawns -> gr_waves_blue: fill this with spawnable squads.
 ; gr_waves_veh_blue_spawns -> gr_waves_blue : for vehicles.
 
 
@@ -52,22 +52,19 @@
 ;; ========================================================================
 
 ;; --- REQUIRED INPUT VARS ---
-(global ai intf_waves_red_spawns NONE) ; recommend using gr_waves_red_spawns
-(global ai intf_waves_blue_spawns NONE); recommend using gr_waves_blue_spawns (if left NONE, it will use the wave template.)
+(global boolean intf_waves_use_template FALSE)
 
 (global boolean intf_waves_free_spawn_red TRUE) ;; can spawn without transport? Default : YES
 (global boolean intf_waves_free_spawn_blue TRUE) ;; can spawn without transport? Default : YES
 
 ;; ---  Input Settings        ---
-(global boolean intf_waves_incr_waves_red false) ; does red increment waves when they respawn?
-(global boolean intf_waves_incr_waves_blue false) ; does blue increment waves when they respawn?
 (global short intf_waves_cnt_red  0) ; leave as 0 if you don't want this to spawn them.
 (global short intf_waves_cnt_blue 0)
 (global short intf_waves_pause_red  900) ; time pause between respawns (ticks)
 (global short intf_waves_pause_blue 900) ; time pause between respawns (ticks)
 
-(global short intf_waves_squad_per_t_red  2) ; time pause between respawns (ticks)
-(global short intf_waves_squad_per_t_blue 4) ; time pause between respawns (ticks)
+(global short intf_waves_squad_per_t_red  2) ; number of squads per vehicle
+(global short intf_waves_squad_per_t_blue 4) ; number of squads per vehicle (phantoms/spirits can hold more.)
 
 ; ======== Interfacing Scripts ========
 (script static void (intf_load_wave_spawner (boolean dbg_en))
@@ -181,26 +178,32 @@
                                             (set current_spawn_veh_red intf_pool_t_vehicle_3)
                                         )
                                     )
-                                    (print "Red Place Squad in Transport!")
-                                    (osa_director_spawn_random_sq_full intf_waves_red_spawns)
-                                    (set osa_wave_loaded_t_red (+ osa_wave_loaded_t_red 1))
-                                    (osa_ds_load_dropship current_spawn_veh_red (intf_pool_get_load_type_for_inf osa_wave_t_pool_idx_red) intf_waves_red_spawns NONE NONE)
+                                    (print "Red place Squad in Transport!")
+                                    (if (intf_director_can_spawn_ai_x OSA_DIR_SIDE_SPARTAN 4)
+                                        (begin 
+                                            (osa_director_spawn_random_sq_full gr_waves_red_spawns FALSE)
+                                            (set osa_wave_loaded_t_red (+ osa_wave_loaded_t_red 1))
+                                            (osa_ds_load_dropship current_spawn_veh_red (intf_pool_get_load_type_for_inf osa_wave_t_pool_idx_red) gr_waves_red_spawns NONE NONE)
+                                        )
+                                    )
                                 )
                                 (begin 
                                     (if intf_waves_free_spawn_red
-                                        (osa_director_spawn_random_sq_full intf_waves_red_spawns)
-                                    )
-                                    (if (= 0 (ai_living_count (ai_squad_group_get_squad gr_waves_trans_red osa_wave_spawned_t_red)))
+                                        (if (intf_director_can_spawn_ai_x OSA_DIR_SIDE_SPARTAN 4)
+                                            (osa_director_spawn_random_sq_full gr_waves_red_spawns FALSE)
+                                        )
                                         (begin 
-                                            ;; recent spawned transport is gone, allow another to spawn and place peeps inside.
-                                            (set osa_wave_spawned_t_red (- osa_wave_spawned_t_red 4))
+                                            (print "wave loop, wait for available transport.")
+                                            (sleep_until (= 0 (ai_living_count gr_waves_trans_red)) 15) ; wait for transport.
+                                            (set osa_wave_spawned_t_red 0)
+                                            (set osa_wave_loaded_t_red 0)
                                         )
                                     )
                                 )
                                 
                             )
                             (set intf_dir_migration_en true) ; move ai into mission.
-                            (sleep_until (<= (ai_living_count intf_waves_red_spawns) 0))
+                            (sleep_until (<= (ai_living_count gr_waves_red_spawns) 0))
                         )
                     )
                     
@@ -288,26 +291,32 @@
                                             (set current_spawn_veh_blue intf_pool_t_vehicle_3)
                                         )
                                     )
-                                    (print "blue Place Squad in Transport!")
-                                    (osa_director_spawn_random_sq_full intf_waves_blue_spawns)
-                                    (set osa_wave_loaded_t_blue (+ osa_wave_loaded_t_blue 1))
-                                    (osa_ds_load_dropship current_spawn_veh_blue (intf_pool_get_load_type_for_inf osa_wave_t_pool_idx_blue) intf_waves_blue_spawns NONE NONE)
+                                    (print "blue place Squad in Transport!")
+                                    (if (intf_director_can_spawn_ai_x OSA_DIR_SIDE_ELITE 4)
+                                        (begin 
+                                            (osa_director_spawn_random_sq_full gr_waves_blue_spawns intf_waves_use_template)
+                                            (set osa_wave_loaded_t_blue (+ osa_wave_loaded_t_blue 1))
+                                            (osa_ds_load_dropship current_spawn_veh_blue (intf_pool_get_load_type_for_inf osa_wave_t_pool_idx_blue) gr_waves_blue_spawns NONE NONE)
+                                        )
+                                    )
                                 )
                                 (begin 
                                     (if intf_waves_free_spawn_blue
-                                        (osa_director_spawn_random_sq_full intf_waves_blue_spawns)
-                                    )
-                                    (if (= 0 (ai_living_count (ai_squad_group_get_squad gr_waves_trans_blue osa_wave_spawned_t_blue)))
+                                        (if (intf_director_can_spawn_ai_x OSA_DIR_SIDE_ELITE 4)
+                                            (osa_director_spawn_random_sq_full gr_waves_blue_spawns intf_waves_use_template)
+                                        )
                                         (begin 
-                                            ;; recent spawned transport is gone, allow another to spawn and place peeps inside.
-                                            (set osa_wave_spawned_t_blue (- osa_wave_spawned_t_blue 4))
+                                            (print "wave loop, wait for available transport.")
+                                            (sleep_until (= 0 (ai_living_count gr_waves_trans_blue)) 15) ; wait for transport.
+                                            (set osa_wave_spawned_t_blue 0)
+                                            (set osa_wave_loaded_t_blue 0)
                                         )
                                     )
                                 )
                                 
                             )
                             (set intf_dir_migration_en true) ; move ai into mission.
-                            (sleep_until (<= (ai_living_count intf_waves_blue_spawns) 0))
+                            (sleep_until (<= (ai_living_count gr_waves_blue_spawns) 0))
                         )
                     )
                     

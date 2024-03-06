@@ -52,7 +52,7 @@
 (global boolean intf_resupply_refresh_trigger FALSE) ;; just set it to true.
 (global short intf_resupply_max_drop_pods 2); max drop pods at once.
 
-(script stub void intf_resupply_weapon_drop_0
+(script stub void plugin_resupply_weapon_drop_0
 	(print "plug this into your script to use your custom/map specific weapon drops.")
 
 	; Example dormant script woken by this.
@@ -105,7 +105,7 @@
 		(begin 
 			(event_survival_awarded_weapon)
 			(object_create_folder_anew folder_survival_weapons)
-			(intf_resupply_weapon_drop_0)
+			(plugin_resupply_weapon_drop_0)
 		)
 	)
 

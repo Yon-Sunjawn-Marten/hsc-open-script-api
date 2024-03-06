@@ -73,8 +73,9 @@
 
 ; ======== Interfacing Scripts ========
 (script static void (intf_load_warzone_lite (boolean dbg_en) (boolean use_weather))
-    (intf_load_bgm dbg_en TRUE TRUE use_weather) ; auto music and no wave / lives announcer
-	(set intf_bgm_score_win  300)
+    (intf_load_bgm dbg_en TRUE TRUE use_weather)
+	(set intf_bgm_score_win  1000)
+    (set intf_bgm_score_tier (/ intf_bgm_score_win 4)) ;; for progress based rewards/triggers.
 
     (intf_director_add_objective intf_obj_red/obj_task_wrapper_inf)
 	(intf_director_add_objective intf_obj_blue/obj_task_wrapper_inf)
@@ -92,8 +93,6 @@
     (ai_object_enable_targeting_from_vehicle intf_warzone_gen_blue true)
     (object_set_allegiance intf_warzone_gen_blue covenant_player)
     (object_immune_to_friendly_damage intf_warzone_gen_blue true)
-    (set intf_waves_red_spawns gr_waves_red_spawns)
-    (set intf_waves_blue_spawns gr_waves_blue_spawns)
 
     (wake osa_warzone_monitor_gen_red)
     (wake osa_warzone_monitor_gen_blue)
@@ -126,6 +125,35 @@
         (intf_bgm_set_game_end_state 2) ; elites win
     )
     (intf_bgm_set_game_end_state 3)
+)
+
+(script static boolean plugin_incd_game_abt_end
+    (cond 
+        ((> (/ intf_bgm_red_score intf_bgm_score_win) 0.85)
+            (begin 
+                (set intf_incd_endgame_m "levels\solo\m52\music\m52_music_09")
+                (= 0 0)
+            )
+        )
+        ((> (/ intf_bgm_blue_score intf_bgm_score_win) 0.85)
+            (begin 
+                (begin_random_count 1
+                    (set intf_incd_endgame_m "levels\solo\m52\music\m52_music_06")
+                    (set intf_incd_endgame_m "levels\solo\m52\music\m52_music_08")
+                )
+                (= 0 0)
+            )
+        )
+        ((< (- (* (survival_mode_get_time_limit) 60) osa_bgm_round_timer) (* 5 60))
+            (begin 
+                (set intf_incd_endgame_m "firefight\firefight_music\firefight_music20")
+                (= 0 0)
+            )
+        )
+        (TRUE
+            (= 0 1)
+        )
+    )
 )
 
 ;------------------------------ PLUGINS ----------------------------------
@@ -189,14 +217,16 @@
     (sleep_until 
         (begin 
             (set intf_bgm_red_score (+
-                (- (+ (ai_spawn_count intf_waves_blue_spawns) (ai_spawn_count gr_waves_veh_blue_spawns)) (ai_living_count gr_dir_elites))
-                (if (<= intf_warzone_gen_blue_en 0) 100 0)
-                (* 10 (- (ai_spawn_count gr_warzone_leaders_blue) (ai_living_count gr_warzone_leaders_blue)))
+                (- (+ (ai_spawn_count gr_waves_blue_spawns) (ai_spawn_count gr_waves_veh_blue_spawns)) (ai_living_count gr_dir_elites))
+                (if (<= intf_warzone_gen_blue_en 0) 350 0)
+                (* 35 (- (ai_spawn_count gr_warzone_leaders_blue) (ai_living_count gr_warzone_leaders_blue)))
+                osa_warzone_red_tally
             ))
             (set intf_bgm_blue_score (+
-                (- (+ (ai_spawn_count intf_waves_red_spawns) (ai_spawn_count gr_waves_veh_red_spawns)) (ai_living_count gr_dir_spartans))
-                (if (<= intf_warzone_gen_red_en 0) 100 0)
-                (* 10 (- (ai_spawn_count gr_warzone_leaders_red) (ai_living_count gr_warzone_leaders_red)))
+                (- (+ (ai_spawn_count gr_waves_red_spawns) (ai_spawn_count gr_waves_veh_red_spawns)) (ai_living_count gr_dir_spartans))
+                (if (<= intf_warzone_gen_red_en 0) 350 0)
+                (* 35 (- (ai_spawn_count gr_warzone_leaders_red) (ai_living_count gr_warzone_leaders_red)))
+                osa_warzone_blue_tally
             ))
             FALSE
         )
@@ -517,34 +547,34 @@
 
 (script dormant osa_warzone_game_stages_red
     (sleep_until (> (/ intf_bgm_red_score intf_bgm_score_win) 0.25))
-    ; (osa_utils_play_sound_for_humans "sound\music\invasion_temp_cues\unsc_win1")
-    (osa_utils_play_sound_for_humans "sound\dialog\invasion\isle_sp_ph1_victory")
-    (osa_utils_play_sound_for_elites "sound\dialog\invasion\bone_cv_ph1_defeat")
+    (osa_utils_play_sound_for_humans "sound\music\invasion_temp_cues\unsc_win1")
+    ; (osa_utils_play_sound_for_humans "sound\dialog\invasion\isle_sp_ph1_victory")
+    ; (osa_utils_play_sound_for_elites "sound\dialog\invasion\bone_cv_ph1_defeat")
     (sleep_until (> (/ intf_bgm_red_score intf_bgm_score_win) 0.50))
-    ; (osa_utils_play_sound_for_humans "sound\music\invasion_temp_cues\unsc_win2")
-    (osa_utils_play_sound_for_humans "sound\dialog\invasion\isle_sp_ph2_victory")
-    (osa_utils_play_sound_for_elites "sound\dialog\invasion\bone_cv_ph2_defeat")
+    (osa_utils_play_sound_for_humans "sound\music\invasion_temp_cues\unsc_win2")
+    ; (osa_utils_play_sound_for_humans "sound\dialog\invasion\isle_sp_ph2_victory")
+    ; (osa_utils_play_sound_for_elites "sound\dialog\invasion\bone_cv_ph2_defeat")
     (sleep_until (> (/ intf_bgm_red_score intf_bgm_score_win) 0.75))
-    ; (osa_utils_play_sound_for_humans "sound\music\invasion_temp_cues\unsc_big_win")
-    (osa_utils_play_sound_for_humans "sound\dialog\invasion\isle_sp_ph3_victory")
-    (osa_utils_play_sound_for_elites "sound\dialog\invasion\isle_cv_ph3_defeat")
+    (osa_utils_play_sound_for_humans "sound\music\invasion_temp_cues\unsc_big_win")
+    ; (osa_utils_play_sound_for_humans "sound\dialog\invasion\isle_sp_ph3_victory")
+    ; (osa_utils_play_sound_for_elites "sound\dialog\invasion\isle_cv_ph3_defeat")
     (sleep_until (> (/ intf_bgm_red_score intf_bgm_score_win) 0.85))
     (submit_incident_with_cause_campaign_team "sur_cla_cov_start" covenant_player) ;; warn players that SPARTANS ARE WINNING
 )
 
 (script dormant osa_warzone_game_stages_blue
     (sleep_until (> (/ intf_bgm_blue_score intf_bgm_score_win) 0.25))
-    ; (osa_utils_play_sound_for_elites "sound\music\invasion_temp_cues\covy_win1")
-    (osa_utils_play_sound_for_elites "sound\dialog\invasion\isle_cv_ph1_victory")
-    (osa_utils_play_sound_for_humans "sound\dialog\invasion\isle_sp_ph1_defeat")
+    (osa_utils_play_sound_for_elites "sound\music\invasion_temp_cues\covy_win1")
+    ; (osa_utils_play_sound_for_elites "sound\dialog\invasion\isle_cv_ph1_victory")
+    ; (osa_utils_play_sound_for_humans "sound\dialog\invasion\isle_sp_ph1_defeat")
     (sleep_until (> (/ intf_bgm_blue_score intf_bgm_score_win) 0.50))
-    ; (osa_utils_play_sound_for_elites "sound\music\invasion_temp_cues\covy_win2")
-    (osa_utils_play_sound_for_elites "sound\dialog\invasion\isle_cv_ph2_victory")
-    (osa_utils_play_sound_for_humans "sound\dialog\invasion\isle_sp_ph2_defeat")
+    (osa_utils_play_sound_for_elites "sound\music\invasion_temp_cues\covy_win2")
+    ; (osa_utils_play_sound_for_elites "sound\dialog\invasion\isle_cv_ph2_victory")
+    ; (osa_utils_play_sound_for_humans "sound\dialog\invasion\isle_sp_ph2_defeat")
     (sleep_until (> (/ intf_bgm_blue_score intf_bgm_score_win) 0.75))
-    ; (osa_utils_play_sound_for_elites "sound\music\invasion_temp_cues\covy_big_win")
-    (osa_utils_play_sound_for_elites "sound\dialog\invasion\isle_cv_ph3_victory")
-    (osa_utils_play_sound_for_humans "sound\dialog\invasion\bone_sp_ph3_defeat")
+    (osa_utils_play_sound_for_elites "sound\music\invasion_temp_cues\covy_big_win")
+    ; (osa_utils_play_sound_for_elites "sound\dialog\invasion\isle_cv_ph3_victory")
+    ; (osa_utils_play_sound_for_humans "sound\dialog\invasion\bone_sp_ph3_defeat")
     (sleep_until (> (/ intf_bgm_blue_score intf_bgm_score_win) 0.85))
     (submit_incident_with_cause_campaign_team "sur_cla_unsc_start" player) ;; warn players that ELITES ARE WINNING
 

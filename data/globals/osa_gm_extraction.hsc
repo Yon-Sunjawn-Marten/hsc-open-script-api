@@ -45,18 +45,30 @@
 
 ; ======== Interfacing Scripts ========
 (script static void (intf_load_extraction (boolean dbg_en) (boolean urban_env) (boolean use_weather))
-    (print "extraction mode loading...")
-	; (set dbg_ext dbg_en)
+	(print "extraction mode loading...")
 	(print_if dbg_en "Debug-Enabled")
-	; (osa_ff_checksum)
+	(intf_load_bgm dbg_en TRUE TRUE use_weather)
+	(set intf_bgm_score_win  100)
+	(intf_director_add_objective intf_obj_red/obj_task_wrapper_inf)
+	(intf_director_add_objective intf_obj_blue/obj_task_wrapper_inf)
+	(intf_director_add_objective intf_obj_red/obj_task_wrapper_veh)
+	(intf_director_add_objective intf_obj_blue/obj_task_wrapper_veh)
+
+	(intf_director_add_objective obj_evac/obj_task_wrapper)
+	
+
+	(set intf_waves_use_template TRUE)
+	(set intf_waves_free_spawn_blue FALSE) ;; cov must drop from ships
+	(set intf_waves_free_spawn_red TRUE)
+	(set intf_waves_pause_red 1800) ;; longer period between waves for red. (civs spawn independently.)
+
 	(plugin_ext_add_rescue_transport)
 
-	(intf_load_bgm TRUE TRUE use_weather) ; blocks loading until a player joins.
+	(set intf_extra_chatter urban_env)
 	(set intf_borrow_bipeds S_EXT_CIV_MAX) ;; borrow S_EXT_CIV_MAX bipeds for this mode. -- reduces down to S_EXT_CIV_MIN as round goes on.
-    (intf_load_ai_director dbg_en)
+    (intf_load_wave_spawner dbg_en)
 	(wake extraction_director)
     (wake extraction_rescue_pelican)
-	(set intf_extra_chatter urban_env)
 ); REQUIRED SCRIPT CALL THIS IN YOUR MAIN INIT FILE.
 
 
@@ -75,21 +87,21 @@
 )
 
 (script static void plugin_bgm_default_win_cond
-	(if (<= s_ext_civ_saved s_ext_civ_killed)
+	(if (< intf_bgm_red_score intf_bgm_blue_score)
 		(begin 
 			(print "ELITE DEFAULT VICTORY")
-			(intf_ff_set_survival_end_state 2)
+			(intf_bgm_set_game_end_state 2)
 		)
 		(begin 
 			(print "SPARTAN DEFAULT VICTORY")
-			(intf_ff_set_survival_end_state 1)
+			(intf_bgm_set_game_end_state 1)
 		)
 	)
 )
 
 (script static boolean plugin_incd_game_abt_end
     (cond 
-        ((>= s_ext_civ_saved (/ (* EVAC_SPARTAN_VICTORY 20) 30))
+        ((>= intf_bgm_red_score (/ (* intf_bgm_score_win 20) 30))
             (begin 
 				(submit_incident_with_cause_campaign_team "sur_cla_cov_start" covenant_player) ;; warn players that SPARTANS ARE WINNING
 				(begin_random_count 1
@@ -100,7 +112,7 @@
                 (= 0 0)
             )
         )
-        ((>= s_ext_civ_killed (/ (* EVAC_ELITE_VICTORY 20) 30))
+        ((>= intf_bgm_blue_score (/ (* intf_bgm_score_win 20) 30))
             (begin 
 				(submit_incident_with_cause_campaign_team "sur_cla_unsc_start" player) ;; warn players that ELITES ARE WINNING
                 (begin_random_count 1
@@ -126,8 +138,19 @@
 
 (script static void plugin_bgm_goal_monitor
 	(wake update_extraction_status)
+	(wake osa_ext_end_game)
 )
 
+(script static boolean plugin_wave_spawn_cond_red
+    (or 
+		(= (ai_living_count sq_ext_rescue) 0) ;; not evac? bring it. Also spawn allies if possible.
+		(and 
+			(= (ai_living_count sq_ext_rescue) 1) ;; evac started? And we have less than optimal guys, keep spawning them.
+			(< (ai_living_count gr_dir_spartans) intf_waves_cnt_red)
+			(intf_director_can_spawn_ai_x OSA_DIR_SIDE_SPARTAN 4)
+		)
+	)
+)
 ;------------------------------ PLUGINS ----------------------------------
 
 ;; --- INPUT VARS --- (plugins)
@@ -143,20 +166,11 @@
 
 (global short intf_tpool_pel_idx 0)
 
-(global short s_ext_points_spartan 0)   ; 1 civ saved is 1/5 point. 5/5 gives a marine. Starting marines: 2
-(global short s_ext_points_elite 0)     ; 1 civ killed is 1/10 point. 10/10 gives an ai. Starting AI: 4
-
-(global short s_ext_civ_saved 0)
 (global short s_ext_civ_saved_delta 0)
-(global short s_ext_civ_killed 0)
 (global short s_ext_civ_spawned 0)
 
 ; global vehicles 
 (global vehicle v_esc_pelican NONE)
-
-
-(global short EVAC_ELITE_VICTORY   100)
-(global short EVAC_SPARTAN_VICTORY 100) ;; or if time runs out.
 
 (global short EVAC_PELICAN_WAIT_TIME 200)
 (global short EVAC_PELICAN_LOAD_TIME 450)
@@ -167,25 +181,25 @@
 			(set intf_borrow_bipeds S_EXT_CIV_MAX)
 			(sleep_until (= evac_zone_ready -1))
 			(print "Update Evac Win Condition")
-			(set s_ext_civ_killed (- s_ext_civ_spawned (+ (ai_living_count gr_ext_civs) s_ext_civ_saved)))
-			(osa_incid_check_win_status (min (max (- s_ext_civ_saved s_ext_civ_killed) -1) 1))
-			(if (< s_ext_civ_saved_delta s_ext_civ_saved);; more people saved! YAY
+			(set intf_bgm_blue_score (- s_ext_civ_spawned (+ (ai_living_count gr_ext_civs) intf_bgm_red_score)))
+			(osa_incid_check_win_status (min (max (- intf_bgm_red_score intf_bgm_blue_score) -1) 1))
+			(if (< s_ext_civ_saved_delta intf_bgm_red_score);; more people saved! YAY
 				(begin 
-					(set s_ext_civ_saved_delta s_ext_civ_saved)
+					(set s_ext_civ_saved_delta intf_bgm_red_score)
 					(osa_utils_play_sound_for_humans "sound\dialog\multiplayer\firefight\survival_hero")
 				)
 			)
 
-			(if (<= EVAC_ELITE_VICTORY s_ext_civ_killed)
+			(if (<= intf_bgm_score_win intf_bgm_blue_score)
 				(begin 
 					(print "ELITE VICTORY")
-					(intf_ff_set_survival_end_state 2)
+					(intf_bgm_set_game_end_state 2)
 				)
 			)
-			(if (<= EVAC_SPARTAN_VICTORY s_ext_civ_saved)
+			(if (<= intf_bgm_score_win intf_bgm_red_score)
 				(begin 
 					(print "SPARTAN VICTORY")
-					(intf_ff_set_survival_end_state 1)
+					(intf_bgm_set_game_end_state 1)
 				)
 			)
         FALSE)
@@ -196,7 +210,7 @@
 (script static boolean ai_place_obj
 	(if (and (<= (+ 4 (ai_living_count gr_ext_civs)) S_EXT_CIV_MAX) (intf_director_can_spawn_ai_x OSA_DIR_SIDE_NONE 4))
 		(begin 
-			(osa_director_spawn_random_sq gr_ext_civ_spawns 4)
+			(osa_director_spawn_random_sq gr_ext_civs_spawns 4)
 			(set s_ext_civ_spawned (+ s_ext_civ_spawned 4))
 			(sleep intf_dir_migration_wait)
 			TRUE
@@ -205,22 +219,30 @@
 	)
 )
 
+
+
 (script dormant extraction_director
-    ;;script init - place 16 AI -- leaving 8 for marines, 
-    (ai_place_obj)
-    (ai_place_obj)
-    (ai_place_obj)
-    (ai_place_obj)
-	;; give starting evac a boost to the human side.
-	; consume some civ spots with early marines / spartans (when they die, civs replace them)
-	(osa_director_spawn_random_sq gr_ext_marine_spawns 4)
-	(sleep intf_dir_migration_wait)
-	(osa_director_spawn_random_sq gr_ext_marine_spawns 2)
-	(sleep intf_dir_migration_wait)
-	(osa_director_spawn_random_sq gr_ext_marine_spawns 2)
-	(sleep intf_dir_migration_wait)
-	(wake update_extraction_status)
-	(wake osa_ext_help_spartans)
+	(sleep_until ;; place starting civilians.
+		(begin 
+			(sleep_until (=	(ai_living_count gr_ext_civs_spawns) 0))
+			(ai_place_obj)
+			(<	(ai_living_count gr_ext_civs) S_EXT_CIV_MAX)
+		)
+	)
+
+	; ;; give starting evac a boost to the human side.
+	; ; consume some civ spots with early marines / spartans (when they die, civs replace them)
+	; (if (intf_director_can_spawn_ai_x OSA_DIR_SIDE_SPARTAN 4)
+	; 	(osa_director_spawn_random_sq gr_waves_red_spawns 4)
+	; )
+	; (sleep_until (= 0 (ai_living_count gr_waves_red_spawns)))
+	; (if (intf_director_can_spawn_ai_x OSA_DIR_SIDE_SPARTAN 2)
+	; 	(osa_director_spawn_random_sq gr_waves_red_spawns 2)
+	; )
+	; (sleep_until (= 0 (ai_living_count gr_waves_red_spawns)))
+	; (if (intf_director_can_spawn_ai_x OSA_DIR_SIDE_SPARTAN 2)
+	; 	(osa_director_spawn_random_sq gr_waves_red_spawns 2)
+	; )
     (sleep_until 
         (begin 
 			(sleep_until (<	(+ 4 (ai_living_count gr_ext_civs)) S_EXT_CIV_MAX))
@@ -242,25 +264,11 @@
     )
 )
 
-(script dormant osa_ext_help_spartans
-	(sleep_until 
-        (begin 
-			(sleep_until (<= (ai_living_count gr_ext_marines) 4))
-            (if (< osa_con_players_human osa_con_players_elite) ;; less humans than elites? Can't rely on pelican to help.
-				(begin_random
-					(if (intf_director_can_spawn_ai_x OSA_DIR_SIDE_SPARTAN 4) (osa_director_spawn_random_sq gr_ext_marine_spawns 4) (sleep intf_dir_migration_wait))
-					(if (intf_director_can_spawn_ai_x OSA_DIR_SIDE_SPARTAN 4) (osa_director_spawn_random_sq gr_ext_marine_spawns 4) (sleep intf_dir_migration_wait))
-					(if (intf_director_can_spawn_ai_x OSA_DIR_SIDE_SPARTAN 2) (osa_director_spawn_random_sq gr_ext_marine_spawns 2) (sleep intf_dir_migration_wait))
-				)
-			)
-        FALSE)
-    )
-)
-
 (script dormant extraction_rescue_pelican
+	; thot about using plugin_wave_transport_vehicle_red but I want to leave that option open.
 	(sleep_until 
 		(begin 
-			(sleep 2100) ;; help comes every 2 minutes (3600)
+			(sleep_until (> (ai_living_count sq_ext_rescue) 0) 5)
 			(if intf_extra_chatter
 				(begin_random_count 1
 					(print "say nothing")
@@ -283,7 +291,6 @@
 			)
 			; (sleep_until (<= (ai_living_count sq_ext_rescue) 0 ))
 			(print "Evacuate the civs!")
-			(ai_place sq_ext_rescue)
 			(sleep 30)
 			(set evac_zone_ready (intf_pool_get_transport_track sq_ext_rescue))
 			(sleep_until (intf_pool_is_tranport_holding sq_ext_rescue))
@@ -299,18 +306,9 @@
 			(if (= 3 intf_tpool_pel_idx)
 				(set v_esc_pelican intf_pool_t_vehicle_3)
 			)
-			(begin_random_count 2
-				(if (intf_director_can_spawn_ai_x OSA_DIR_SIDE_SPARTAN 4)
-					(osa_ds_load_dropship_place v_esc_pelican "any" intf_sq_marines_0 NONE NONE)
-				)
-				(if (intf_director_can_spawn_ai_x OSA_DIR_SIDE_SPARTAN 4)
-					(osa_ds_load_dropship_place v_esc_pelican "any" intf_sq_marines_1 NONE NONE)
-				)
-			)
-			(osa_ds_unload_dropship v_esc_pelican intf_pl_t_drop_side_a_0)
 			(sleep EVAC_PELICAN_WAIT_TIME)
 			(print "load evacs!")
-			(cs_run_command_script gr_ext_civs cs_ext_get_rescued)
+			(cs_run_command_script gr_ext_civs cs_ext_get_rescued) ;; NEEDS v_esc_pelican to be set.
 			(sleep EVAC_PELICAN_LOAD_TIME)
 			(begin_random_count 1
 				(sleep (ai_play_line_on_object NONE m50_0990))
@@ -329,8 +327,9 @@
 				)
 			)
 
-			(set s_ext_civ_saved_delta s_ext_civ_saved)
-    		(set s_ext_civ_saved (+ s_ext_civ_saved (- (list_count (vehicle_riders v_esc_pelican)) 1)))
+			(set s_ext_civ_saved_delta intf_bgm_red_score)
+    		(set intf_bgm_red_score (+ intf_bgm_red_score (- (list_count (vehicle_riders v_esc_pelican)) 1)))
+			(sleep_until (= (ai_living_count sq_ext_rescue) 0) 1) ; wait for deletion.
 			FALSE
 		)
 	 1)
@@ -342,4 +341,9 @@
     (cs_enable_pathfinding_failsafe TRUE)
     (cs_go_to_vehicle v_esc_pelican)
 
+)
+
+(script dormant osa_ext_end_game
+    (sleep_until (or (>= intf_bgm_blue_score intf_bgm_score_win) (>= intf_bgm_red_score intf_bgm_score_win)) 30)
+    (plugin_bgm_default_win_cond) ; set the default win condition NOW.
 )

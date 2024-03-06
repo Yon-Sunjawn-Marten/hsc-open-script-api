@@ -73,14 +73,31 @@
 ; ai_point_set_get_point
 ; ai_get_point_count
 
+
+;; ========================== REQUIRED in Sapien ==================================
+
+; REQUIRED AI/Squad Groups
+;; make all groups a child of this somehow. All squads should be counted under this so it can keep memory safe.
+; For asking whether we maxed out the bipeds period.
+; gr_dir_all
+
+; gr_dir_spartans      -> gr_dir_all ;; For asking whether we maxed out the bipeds for this side.
+; gr_dir_elites        -> gr_dir_all ;; For asking whether we maxed out the bipeds for this side.
+
+
+; make a folder under squads called: director
+; fill this with squads (as many as you want to spread out) per side.
+; you can create different groups of squads if you want.
+
+;; -------------------------- REQUIRED in Sapien ----------------------------------
+
+
+
 ;; ========================================================================
 ;; ========================== INTERFACES ==================================
 ;; ========================================================================
 
 ;; --- REQUIRED INPUT VARS ---
-(global ai intf_gr_dir_all NONE)      ;; For asking whether we maxed out the bipeds period.
-(global ai intf_gr_dir_spartans NONE) ;; For asking whether we maxed out the bipeds for this side.
-(global ai intf_gr_dir_elites NONE)   ;; For asking whether we maxed out the bipeds for this side.
 
 ;; ---  Input Settings        ---
 ; Have a script that wants to override team balance?
@@ -89,6 +106,7 @@
 (global short intf_dir_migration_rate 30) ; period of time it takes for squads to move.
 (global short intf_dir_migration_wait (+ intf_dir_migration_rate 5)) ; period of time it takes for squads to move.
 (global boolean intf_dir_balance_players true) ;; auto player balancing?
+(global boolean intf_dir_migration_en true) ;; enable migration scripts, disable temporarily to load squads in transports from their spawn squads.
 
 ; AI dedicated to transportation services. put both to 0 if you dont plan to use.
 ; Sometimes, you can leverage this to guarantee a min AI count to a side.
@@ -111,59 +129,30 @@
 (global short intf_part_max_bipeds 42) ; #ai + #players
 
 ; ======== Interfacing Scripts ========
-(global boolean osa_dir_checksum_pass TRUE) ; why this and not cond? I want ALL missing elements printed out. We're not going to play a game of guess who.
-(script static boolean osa_ai_director_checksum
-    ;(= 0 0) ; Don't ask, its bullshit like this: (the value of this expression (in a <void> slot) can never be used.: true)
-    (if (= intf_gr_dir_all NONE)
-        (begin 
-			(print "Interface missing required connection: <squad group> intf_gr_dir_all")
-			(set osa_dir_checksum_pass FALSE)
-		)
-    )
-    (if (= intf_gr_dir_spartans NONE)
-        (begin 
-			(print "Interface missing required connection: <squad group> intf_gr_dir_spartans")
-			(set osa_dir_checksum_pass FALSE)
-		)
-    )
-    (if (= intf_gr_dir_elites NONE)
-        (begin 
-			(print "Interface missing required connection: <squad group> intf_gr_dir_elites")
-			(set osa_dir_checksum_pass FALSE)
-		)
-    )
-    osa_dir_checksum_pass
-) ; intf checksum required on all scripts supporting null protection.
 
 ; if using vscode editor, just collapse these intf functions.
 (script static void (intf_load_ai_director (boolean dbg_en))
     (print "director loading...")
     (set dbg_dir dbg_en)
     (print_if dbg_dir "Debug-Enabled")
-    (osa_ai_director_checksum)
-    (if osa_dir_checksum_pass
-        (begin 
-            (set osa_use_transport_spartans intf_num_transport_spartans)
-            (set osa_use_transport_elites intf_num_transport_elites)
-            (wake osa_update_player_statistics)
-            (wake osa_track_player_death_count)
-            (osa_director_refresh_objectives)
-            (osa_director_auto_migration)
-        )
-		(print "director checksum failed, module will not load.")
-    )
+    (set osa_use_transport_spartans intf_num_transport_spartans)
+    (set osa_use_transport_elites intf_num_transport_elites)
+    (wake osa_update_player_statistics)
+    (wake osa_track_player_death_count)
+    (osa_director_refresh_objectives)
+    (osa_director_auto_migration)
 ); REQUIRED SCRIPT CALL THIS IN YOUR MAIN INIT FILE.
 
 (script static boolean (intf_director_can_spawn_ai_x (short side) (short n_ai))
     (cond 
         ((= side OSA_DIR_SIDE_SPARTAN)
-            (and (<= (+ (ai_living_count intf_gr_dir_spartans) n_ai) osa_part_max_ai_spartan) (<= (+ (ai_living_count intf_gr_dir_all) n_ai) (+ intf_borrow_bipeds osa_available_bipeds)))
+            (and (<= (+ (ai_living_count gr_dir_spartans) n_ai) osa_part_max_ai_spartan) (<= (+ (ai_living_count gr_dir_all) n_ai) (+ intf_borrow_bipeds osa_available_bipeds)))
         )
         ((= side OSA_DIR_SIDE_ELITE)
-            (and (<= (+ (ai_living_count intf_gr_dir_elites) n_ai) osa_part_max_ai_elite) (<= (+ (ai_living_count intf_gr_dir_all) n_ai) (+ intf_borrow_bipeds osa_available_bipeds)))
+            (and (<= (+ (ai_living_count gr_dir_elites) n_ai) osa_part_max_ai_elite) (<= (+ (ai_living_count gr_dir_all) n_ai) (+ intf_borrow_bipeds osa_available_bipeds)))
         )
         (TRUE ; default
-            (<= (+ (ai_living_count intf_gr_dir_all) n_ai) (+ intf_borrow_bipeds osa_available_bipeds)) ; at minimum, need to keep below available bipeds.
+            (<= (+ (ai_living_count gr_dir_all) n_ai) (+ intf_borrow_bipeds osa_available_bipeds)) ; at minimum, need to keep below available bipeds.
         )
     )
 ) ;; spawning ai is free, use this when spawning ai. director will auto update stats.
@@ -191,10 +180,10 @@
 (script static short (intf_director_max_squads_of_four (short side))
     (cond
         ((= side OSA_DIR_SIDE_SPARTAN)
-            (/ (- osa_part_max_ai_spartan (ai_living_count intf_gr_dir_spartans)) 4)
+            (/ (- osa_part_max_ai_spartan (ai_living_count gr_dir_spartans)) 4)
         ) 
         ((= side OSA_DIR_SIDE_ELITE)
-            (/ (- osa_part_max_ai_elite (ai_living_count intf_gr_dir_elites)) 4)
+            (/ (- osa_part_max_ai_elite (ai_living_count gr_dir_elites)) 4)
         )
     )
 )
@@ -341,6 +330,14 @@
     )
 )
 
+;; ------------------------------------------------------------------------
+;; -------------------------- INTERFACES ----------------------------------
+;; ------------------------------------------------------------------------
+
+
+;; ========================== PUBLIC Scripts ==================================
+
+
 (script static boolean (osa_director_type_can_transport (short type))
     (cond 
         (
@@ -388,11 +385,31 @@
     )
 ); if you want mongooses on phantoms, pls contact me.
 
-;; ------------------------------------------------------------------------
-;; -------------------------- INTERFACES ----------------------------------
-;; ------------------------------------------------------------------------
+(script static void (osa_director_spawn_random_sq_full (ai squad_group) (boolean use_template))
+    (if use_template
+        (ai_place_wave (survival_mode_get_wave_squad) squad_group 1)
+        (ai_place (ai_squad_group_get_squad squad_group (random_range 0 (ai_squad_group_get_squad_count squad_group))))
+    )
+)
+
+(script static void (osa_director_spawn_random_sq (ai squad_group) (short amt))
+    (if (> amt 0)
+        (ai_place (ai_squad_group_get_squad squad_group (random_range 0 (ai_squad_group_get_squad_count squad_group))) amt)
+        (ai_place (ai_squad_group_get_squad squad_group (random_range 0 (ai_squad_group_get_squad_count squad_group))))
+    )
+)
+
+(script static void (osa_director_spawn_if_dead (ai squad_group) (short index))
+    (if (= (ai_living_count (ai_squad_group_get_squad squad_group index)) 0) (ai_place (ai_squad_group_get_squad squad_group index)))
+)
+
 
 ;; ========================== PUBLIC VARIABLES Read-Only ==================================
+(global short osa_player_dead_count_spartans 0)
+(global short osa_player_dead_count_elites   0)
+
+(global short osa_use_transport_spartans     2)
+(global short osa_use_transport_elites       2)
 
 (global short OSA_DIR_SIDE_SPARTAN 0)
 (global short OSA_DIR_SIDE_ELITE 1)
@@ -415,25 +432,6 @@
 (global short OSA_DIR_TYPE_SQUAD               14)
 (global short OSA_DIR_TYPE_PAIR                15)
 (global short OSA_DIR_TYPE_SINGLE              16)
-
-;; ========================== REQUIRED in Sapien ==================================
-; REQUIRED AI/Squad Groups
-; gr_survival_all ;; make all groups a child of this somehow. All squads should be counted under this.
-; gr_survival_spartans      -> gr_survival_all
-; gr_survival_elites        -> gr_survival_all
-
-; If you intend to use FF plugin:
-; waves go to gr_survival_remaining at end of wave. Used to trigger some objective tasks that make the AI come near you.
-; generally waves spawn in separate squads and thus can attempt tasks that are limited to 4 ai for ex.
-; gr_survival_remaining might fill up to more than 4, so they would be ineligible to do them.
-; not setting a task limit can result in a rush with dozens of combatants, user beware.
-; gr_survival_remaining     -> gr_survival_elites
-
-; gr_survival_waves         -> gr_survival_elites
-; gr_survival_bonus         -> gr_survival_elites
-
-;; -------------------------- REQUIRED in Sapien ----------------------------------
-
 
 ;; --- INPUT VARS --- (plugins)
 ; empty fireteams for the director to distribute spawned squads to.
@@ -489,14 +487,14 @@
 (global ai intf_obj_dir_4 NONE)
 (global ai intf_obj_dir_5 NONE)
 
+
 ;; ========================== Internal Use CONSTANTS/VARS ==================================
 ; You don't need to read or know any of the internals. The abv functions are the result of all the code below.
 
 (global boolean dbg_dir false)
 
 (global short OSA_MIN_TRANSPORT              1) ;; minimum transports to reserve, firefight/extraction needs this at 1 right now.
-(global short osa_use_transport_spartans     2)
-(global short osa_use_transport_elites       2)
+
 
 (global short osa_available_bipeds      0)
 (global short osa_part_total_players_p2 0) ; players present + bias (less than 8 gives extra bipeds back to pool)
@@ -517,8 +515,6 @@
 
 
 ; Dead player tracking over periods of time.
-(global short osa_player_dead_count_spartans 0)
-(global short osa_player_dead_count_elites   0)
 (global short osa_player_dead_latch_spartans 0)
 (global short osa_player_dead_latch_elites   0)
 
@@ -654,10 +650,10 @@
     ; hsc supported it on a task level.
     (cond 
         ((= side OSA_DIR_SIDE_SPARTAN)
-            (- (ai_spawn_count intf_gr_dir_spartans) (ai_living_count intf_gr_dir_spartans))
+            (- (ai_spawn_count gr_dir_spartans) (ai_living_count gr_dir_spartans))
         )
         ((= side OSA_DIR_SIDE_ELITE)
-            (- (ai_spawn_count intf_gr_dir_elites) (ai_living_count intf_gr_dir_elites))
+            (- (ai_spawn_count gr_dir_elites) (ai_living_count gr_dir_elites))
         )
     )
 )
@@ -703,19 +699,20 @@
     (if (<= osa_part_max_ai_spartan 7) ; sacrifice a transport full of crew to get some bois, the 0.38 prevents 0 transports from happening.
         (begin
             (print_if dbg_dir "remove an spartan transport to balance teams")
-            (set osa_use_transport_spartans (max (- osa_use_transport_spartans 1) OSA_MIN_TRANSPORT)) ; don't let below 1
+            (set osa_use_transport_spartans (max (- osa_use_transport_spartans (min 1 intf_num_transport_spartans)) OSA_MIN_TRANSPORT)) ; don't let below 1
         )
     )
     (if (<= osa_part_max_ai_elite 7)
         (begin 
             (print_if dbg_dir "remove an elite transport to balance teams")
-            (set osa_use_transport_elites (max (- osa_use_transport_elites 1) OSA_MIN_TRANSPORT)) ; don't let below 1 for corner cases.
+            (set osa_use_transport_elites (max (- osa_use_transport_elites (min 1 intf_num_transport_elites)) OSA_MIN_TRANSPORT)) ; don't let below 1 for corner cases.
         )
     )
     (if (> (/ osa_part_max_ai_elite 16) intf_num_transport_elites) 
         (begin 
-            (print "CRITCAL WARNING: number of transports is not enough for firefight. Min transports for biped count:")
+            (print_if dbg_dir "CRITCAL WARNING: number of transports is not enough for firefight. Min transports for biped count:")
             (inspect (/ osa_part_max_ai_elite 16))
+            (print_if dbg_dir "CRITCAL WARNING: If you allow spawns without transport, ignore this warning.")
         )
     )
 )
@@ -893,6 +890,7 @@
             (if (!= intf_migrate_dir_0 NONE)
                 (begin 
                     (sleep_until (> (ai_living_count intf_migrate_dir_0) 0))
+                    (sleep_until intf_dir_migration_en 1)
                     (sleep 1) ; just in case they won't migrate immediately.
                     (intf_director_migrate_squad intf_migrate_dir_0 intf_migrate_dest_0) ; find a squad to migrate to.
                     (sleep 1) ; a cooldown period for kicks.
@@ -912,6 +910,7 @@
             (if (!= intf_migrate_dir_1 NONE)
                 (begin 
                     (sleep_until (> (ai_living_count intf_migrate_dir_1) 0))
+                    (sleep_until intf_dir_migration_en 1)
                     (sleep 1) ; just in case they won't migrate immediately.
                     (intf_director_migrate_squad intf_migrate_dir_1 intf_migrate_dest_1) ; find a squad to migrate to.
                     (sleep 1) ; a cooldown period for kicks.
@@ -931,6 +930,7 @@
             (if (!= intf_migrate_dir_2 NONE)
                 (begin 
                     (sleep_until (> (ai_living_count intf_migrate_dir_2) 0))
+                    (sleep_until intf_dir_migration_en 1)
                     (sleep 1) ; just in case they won't migrate immediately.
                     (intf_director_migrate_squad intf_migrate_dir_2 intf_migrate_dest_2) ; find a squad to migrate to.
                     (sleep 1) ; a cooldown period for kicks.
@@ -950,6 +950,7 @@
             (if (!= intf_migrate_dir_3 NONE)
                 (begin 
                     (sleep_until (> (ai_living_count intf_migrate_dir_3) 0))
+                    (sleep_until intf_dir_migration_en 1)
                     (sleep 1) ; just in case they won't migrate immediately.
                     (intf_director_migrate_squad intf_migrate_dir_3 intf_migrate_dest_3) ; find a squad to migrate to.
                     (sleep 1) ; a cooldown period for kicks.
@@ -969,6 +970,7 @@
             (if (!= intf_migrate_dir_4 NONE)
                 (begin 
                     (sleep_until (> (ai_living_count intf_migrate_dir_4) 0))
+                    (sleep_until intf_dir_migration_en 1)
                     (sleep 1) ; just in case they won't migrate immediately.
                     (intf_director_migrate_squad intf_migrate_dir_4 intf_migrate_dest_4) ; find a squad to migrate to.
                     (sleep 1) ; a cooldown period for kicks.
@@ -988,6 +990,7 @@
             (if (!= intf_migrate_dir_5 NONE)
                 (begin 
                     (sleep_until (> (ai_living_count intf_migrate_dir_5) 0))
+                    (sleep_until intf_dir_migration_en 1)
                     (sleep 1) ; just in case they won't migrate immediately.
                     (intf_director_migrate_squad intf_migrate_dir_5 intf_migrate_dest_5) ; find a squad to migrate to.
                     (sleep 1) ; a cooldown period for kicks.
@@ -1007,6 +1010,7 @@
             (if (!= intf_migrate_dir_6 NONE)
                 (begin 
                     (sleep_until (> (ai_living_count intf_migrate_dir_6) 0))
+                    (sleep_until intf_dir_migration_en 1)
                     (sleep 1) ; just in case they won't migrate immediately.
                     (intf_director_migrate_squad intf_migrate_dir_6 intf_migrate_dest_6) ; find a squad to migrate to.
                     (sleep 1) ; a cooldown period for kicks.

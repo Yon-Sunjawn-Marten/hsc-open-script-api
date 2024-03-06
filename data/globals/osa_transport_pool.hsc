@@ -501,7 +501,6 @@
 
 
 (global boolean dbg_pool false)
-(global boolean osa_pool_insta_clean false)
 
 ; Up to 8 automatic transports are supported in scenario
 ; Need to use a unique squad per transport, unfortunately.

@@ -51,7 +51,7 @@
 ; ======== Interfacing Scripts ========
 
 (script static void (intf_pool_add_drop_point (device dm) (short type))
-	(print_if dbg_pool "registering drop point:")
+	(print_if dbg_drop "registering drop point:")
 	; (inspect type)
     (cond 
         ((= intf_pool_dm_0 NONE)
@@ -106,7 +106,7 @@
 ) ;; you can use this for any pod: weapon, squad, individual. Just give the type along with it.
 
 (script static void (intf_pool_set_drop_cleanup (device dm) (short timer))
-	(print_if dbg_pool "set drop cleanup")
+	(print_if dbg_drop "set drop cleanup")
     (cond 
         ((= intf_pool_dm_0 dm)
             (set intf_pool_drop_clean_timer_0 timer)
@@ -160,12 +160,12 @@
 )
 
 (script static void (intf_pool_drop_a_pod (object_name pod_name) (short type))
-	(print_if dbg_pool "dropping a pod!")
+	(print_if dbg_drop "dropping a pod!")
 	(if (= type OSA_POOL_DROP_WEAPON)
 		(object_create_variant pod_name (intf_plugin_pool_pod_options))
 		(object_create pod_name)
 	)
-	(print_if dbg_pool "pod placed")
+	(print_if dbg_drop "pod placed")
 	(osa_pool_try_drop_a_pod pod_name type)
 )
 
@@ -184,7 +184,7 @@
 ) ; For selecting the weapon to drop in drop pods. Can override or use default
 
 (script static void (intf_pool_place_squad_in_pod_and_drop (ai squad) (object_name pod_name) (short type))
-	(print_if dbg_pool "dropping a pod!")
+	(print_if dbg_drop "dropping a pod!")
 	(object_create pod_name)
 	(ai_place squad)
 	(sleep 1)
@@ -218,7 +218,7 @@
 ; You don't need to read or know any of the internals. The abv functions are the result of all the code below.
 
 
-(global boolean dbg_pool false)
+(global boolean dbg_drop false)
 (global boolean osa_pool_insta_clean false)
 
 ;; --- INPUT VARS --- (plugins)
@@ -304,100 +304,100 @@
 	(if (= type OSA_POOL_DROP_SQUAD)
 		(intf_utils_callout_object pod (osa_utils_get_marker_type "poi red") 900)
 	)
-	(print_if dbg_pool "pod placement - exit")
+	(print_if dbg_drop "pod placement - exit")
 )
 
 (script static void (osa_pool_try_drop_a_pod (object pod_name) (short type))
-	(print_if dbg_pool "attempt pod spawn at:")
+	(print_if dbg_drop "attempt pod spawn at:")
 	; (inspect type)
 	(cond 
 		((and (!= intf_pool_dm_0 NONE) (= intf_pool_pod_0 NONE) (= type intf_pool_dm_type_0))
 			(begin 
-				(print_if dbg_pool "drop0")
+				(print_if dbg_drop "drop0")
 				(set intf_pool_pod_0 pod_name) ; failure to place still occupies this, thats ok.
 			)
 		)
 		((and (!= intf_pool_dm_1 NONE) (= intf_pool_pod_1 NONE) (= type intf_pool_dm_type_1))
 			(begin 
-				(print_if dbg_pool "drop1")
+				(print_if dbg_drop "drop1")
 				(set intf_pool_pod_1 pod_name)
 			)
 		)
 		((and (!= intf_pool_dm_2 NONE) (= intf_pool_pod_2 NONE) (= type intf_pool_dm_type_2))
 			(begin 
-				(print_if dbg_pool "drop2")
+				(print_if dbg_drop "drop2")
 				(set intf_pool_pod_2 pod_name)
 			)
 		)
 		((and (!= intf_pool_dm_3 NONE) (= intf_pool_pod_3 NONE) (= type intf_pool_dm_type_3))
 			(begin 
-				(print_if dbg_pool "drop3")
+				(print_if dbg_drop "drop3")
 				(set intf_pool_pod_3 pod_name)
 			)
 		)
 		((and (!= intf_pool_dm_4 NONE) (= intf_pool_pod_4 NONE) (= type intf_pool_dm_type_4))
 			(begin 
-				(print_if dbg_pool "drop4")
+				(print_if dbg_drop "drop4")
 				(set intf_pool_pod_4 pod_name)
 			)
 		)
 		((and (!= intf_pool_dm_5 NONE) (= intf_pool_pod_5 NONE) (= type intf_pool_dm_type_5))
 			(begin 
-				(print_if dbg_pool "drop5")
+				(print_if dbg_drop "drop5")
 				(set intf_pool_pod_5 pod_name)
 			)
 		)
 		((and (!= intf_pool_dm_6 NONE) (= intf_pool_pod_6 NONE) (= type intf_pool_dm_type_6))
 			(begin 
-				(print_if dbg_pool "drop6")
+				(print_if dbg_drop "drop6")
 				(set intf_pool_pod_6 pod_name)
 			)
 		)
 		((and (!= intf_pool_dm_7 NONE) (= intf_pool_pod_7 NONE) (= type intf_pool_dm_type_7))
 			(begin 
-				(print_if dbg_pool "drop7")
+				(print_if dbg_drop "drop7")
 				(set intf_pool_pod_7 pod_name)
 			)
 		)
 		((and (!= intf_pool_dm_8 NONE) (= intf_pool_pod_8 NONE) (= type intf_pool_dm_type_8))
 			(begin 
-				(print_if dbg_pool "drop8")
+				(print_if dbg_drop "drop8")
 				(set intf_pool_pod_8 pod_name)
 			)
 		)
 		((and (!= intf_pool_dm_9 NONE) (= intf_pool_pod_9 NONE) (= type intf_pool_dm_type_9))
 			(begin 
-				(print_if dbg_pool "drop9")
+				(print_if dbg_drop "drop9")
 				(set intf_pool_pod_9 pod_name)
 			)
 		)
 		((and (!= intf_pool_dm_10 NONE) (= intf_pool_pod_10 NONE) (= type intf_pool_dm_type_10))
 			(begin 
-				(print_if dbg_pool "drop10")
+				(print_if dbg_drop "drop10")
 				(set intf_pool_pod_10 pod_name)
 			)
 		)
 		((and (!= intf_pool_dm_11 NONE) (= intf_pool_pod_11 NONE) (= type intf_pool_dm_type_11))
 			(begin 
-				(print_if dbg_pool "drop11")
+				(print_if dbg_drop "drop11")
 				(set intf_pool_pod_11 pod_name)
 			)
 		)
 		((and (!= intf_pool_dm_12 NONE) (= intf_pool_pod_12 NONE) (= type intf_pool_dm_type_12))
 			(begin 
-				(print_if dbg_pool "drop12")
+				(print_if dbg_drop "drop12")
 				(set intf_pool_pod_12 pod_name)
 			)
 		)
 		((and (!= intf_pool_dm_13 NONE) (= intf_pool_pod_13 NONE) (= type intf_pool_dm_type_13))
 			(begin 
-				(print_if dbg_pool "drop13")
+				(print_if dbg_drop "drop13")
 				(set intf_pool_pod_13 pod_name)
 			)
 		)
 		((and (!= intf_pool_dm_14 NONE) (= intf_pool_pod_14 NONE) (= type intf_pool_dm_type_14))
 			(begin 
-				(print_if dbg_pool "drop14")
+				(print_if dbg_drop "drop14")
 				(set intf_pool_pod_14 pod_name)
 			)
 		)
@@ -421,7 +421,7 @@
 	(osa_pool_drop_a_pod pod pod_dm type)
 	(if (!= type OSA_POOL_DROP_WEAPON)	
 		(begin 
-			(print_if dbg_pool "squad pod open!")
+			(print_if dbg_drop "squad pod open!")
 			(unit_open (unit pod))
 			(sleep 60)
 			(vehicle_unload pod "")

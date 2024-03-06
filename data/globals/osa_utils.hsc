@@ -19,7 +19,7 @@
 ;; --- REQUIRED INPUT VARS ---
 
 ;; ---  Input Settings        ---
-(global short intf_utils_hp_see_dist 15) ; in world units?
+(global short intf_utils_hp_see_dist 20) ; in world units?
 (global short intf_utils_proximity_see_dist 15) ; in world units?
 (global short intf_utils_proximity_min_dist 4) ; in world units?
 
