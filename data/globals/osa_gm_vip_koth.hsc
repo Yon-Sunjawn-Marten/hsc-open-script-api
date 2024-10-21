@@ -58,12 +58,22 @@
     (set intf_incd_m_intro_cv "sound\dialog\multiplayer\flavor\hail_to_the_king")
     (set intf_incd_m_intro_sp "sound\dialog\multiplayer\flavor\hail_to_the_king")
     
-    (wake osa_koth_update_tiers_red)
-    (wake osa_koth_update_tiers_blue)
+    ; (wake osa_koth_update_tiers_red)
+    ; (wake osa_koth_update_tiers_blue)
 
     (intf_load_bgm dbg_en FALSE TRUE use_weather) ; auto music and no wave / lives announcer
-    (set intf_bgm_score_win 5400) ;; 3600 originally. 5400 brings it close to time out.
+    ;; Base (generator) health is 3000 so we do 2 dmg every 2 secs to it.
+    ;; Every 2 seconds because engine will get overwhelmed by dmg triggers.
+    (set intf_bgm_score_win 1350) ;; 3600 originally. 5400 brings it close to time out.  was 5400 until tally was set to two second period.
     (set intf_bgm_score_tier (/ intf_bgm_score_win 8)) ;; for progress based rewards/triggers.
+
+    
+    ; (object_destroy koth_a_red)
+    ; (object_destroy koth_b_red)
+    ; (object_destroy koth_c_red)
+    ; (object_destroy koth_a_blue)
+    ; (object_destroy koth_b_blue)
+    ; (object_destroy koth_c_blue)
 
     (wake osa_koth_tally_score)
     (wake osa_koth_test_a)
@@ -71,6 +81,105 @@
     (wake osa_koth_test_c)
     (wake osa_koth_game_stages_red)
     (wake osa_koth_game_stages_blue)
+    (wake osa_koth_replinish_red_ai)
+    (wake osa_koth_replinish_blue_ai)
+    (wake osa_koth_summon_capture)
+
+    
+
+    (chud_track_object_for_player_with_priority (human_player_in_game_get 0) koth_base_red (osa_utils_get_marker_type "defend a"))
+	(chud_track_object_for_player_with_priority (human_player_in_game_get 1) koth_base_red (osa_utils_get_marker_type "defend a"))
+	(chud_track_object_for_player_with_priority (human_player_in_game_get 2) koth_base_red (osa_utils_get_marker_type "defend a"))
+	(chud_track_object_for_player_with_priority (human_player_in_game_get 3) koth_base_red (osa_utils_get_marker_type "defend a"))
+	(chud_track_object_for_player_with_priority (human_player_in_game_get 4) koth_base_red (osa_utils_get_marker_type "defend a"))
+	(chud_track_object_for_player_with_priority (human_player_in_game_get 5) koth_base_red (osa_utils_get_marker_type "defend a"))
+	(chud_track_object_for_player_with_priority (human_player_in_game_get 6) koth_base_red (osa_utils_get_marker_type "defend a"))
+	(chud_track_object_for_player_with_priority (human_player_in_game_get 7) koth_base_red (osa_utils_get_marker_type "defend a"))
+    
+	(chud_track_object_for_player_with_priority (elite_player_in_game_get 0) koth_base_red (osa_utils_get_marker_type "defend a"))
+	(chud_track_object_for_player_with_priority (elite_player_in_game_get 1) koth_base_red (osa_utils_get_marker_type "defend a"))
+	(chud_track_object_for_player_with_priority (elite_player_in_game_get 2) koth_base_red (osa_utils_get_marker_type "defend a"))
+	(chud_track_object_for_player_with_priority (elite_player_in_game_get 3) koth_base_red (osa_utils_get_marker_type "defend a"))
+	(chud_track_object_for_player_with_priority (elite_player_in_game_get 4) koth_base_red (osa_utils_get_marker_type "defend a"))
+	(chud_track_object_for_player_with_priority (elite_player_in_game_get 5) koth_base_red (osa_utils_get_marker_type "defend a"))
+	(chud_track_object_for_player_with_priority (elite_player_in_game_get 6) koth_base_red (osa_utils_get_marker_type "defend a"))
+	(chud_track_object_for_player_with_priority (elite_player_in_game_get 7) koth_base_red (osa_utils_get_marker_type "defend a"))
+    
+
+	(chud_track_object_for_player_with_priority (human_player_in_game_get 0) koth_base_blue (osa_utils_get_marker_type "defend b"))
+	(chud_track_object_for_player_with_priority (human_player_in_game_get 1) koth_base_blue (osa_utils_get_marker_type "defend b"))
+	(chud_track_object_for_player_with_priority (human_player_in_game_get 2) koth_base_blue (osa_utils_get_marker_type "defend b"))
+	(chud_track_object_for_player_with_priority (human_player_in_game_get 3) koth_base_blue (osa_utils_get_marker_type "defend b"))
+	(chud_track_object_for_player_with_priority (human_player_in_game_get 4) koth_base_blue (osa_utils_get_marker_type "defend b"))
+	(chud_track_object_for_player_with_priority (human_player_in_game_get 5) koth_base_blue (osa_utils_get_marker_type "defend b"))
+	(chud_track_object_for_player_with_priority (human_player_in_game_get 6) koth_base_blue (osa_utils_get_marker_type "defend b"))
+	(chud_track_object_for_player_with_priority (human_player_in_game_get 7) koth_base_blue (osa_utils_get_marker_type "defend b"))
+    
+	(chud_track_object_for_player_with_priority (elite_player_in_game_get 0) koth_base_blue (osa_utils_get_marker_type "defend b"))
+	(chud_track_object_for_player_with_priority (elite_player_in_game_get 1) koth_base_blue (osa_utils_get_marker_type "defend b"))
+	(chud_track_object_for_player_with_priority (elite_player_in_game_get 2) koth_base_blue (osa_utils_get_marker_type "defend b"))
+	(chud_track_object_for_player_with_priority (elite_player_in_game_get 3) koth_base_blue (osa_utils_get_marker_type "defend b"))
+	(chud_track_object_for_player_with_priority (elite_player_in_game_get 4) koth_base_blue (osa_utils_get_marker_type "defend b"))
+	(chud_track_object_for_player_with_priority (elite_player_in_game_get 5) koth_base_blue (osa_utils_get_marker_type "defend b"))
+	(chud_track_object_for_player_with_priority (elite_player_in_game_get 6) koth_base_blue (osa_utils_get_marker_type "defend b"))
+	(chud_track_object_for_player_with_priority (elite_player_in_game_get 7) koth_base_blue (osa_utils_get_marker_type "defend b"))
+    
+
+	(chud_track_object_for_player_with_priority (human_player_in_game_get 0) koth_flag_a (osa_utils_get_marker_type "poi a"))
+	(chud_track_object_for_player_with_priority (human_player_in_game_get 1) koth_flag_a (osa_utils_get_marker_type "poi a"))
+	(chud_track_object_for_player_with_priority (human_player_in_game_get 2) koth_flag_a (osa_utils_get_marker_type "poi a"))
+	(chud_track_object_for_player_with_priority (human_player_in_game_get 3) koth_flag_a (osa_utils_get_marker_type "poi a"))
+	(chud_track_object_for_player_with_priority (human_player_in_game_get 4) koth_flag_a (osa_utils_get_marker_type "poi a"))
+	(chud_track_object_for_player_with_priority (human_player_in_game_get 5) koth_flag_a (osa_utils_get_marker_type "poi a"))
+	(chud_track_object_for_player_with_priority (human_player_in_game_get 6) koth_flag_a (osa_utils_get_marker_type "poi a"))
+	(chud_track_object_for_player_with_priority (human_player_in_game_get 7) koth_flag_a (osa_utils_get_marker_type "poi a"))
+    
+	(chud_track_object_for_player_with_priority (elite_player_in_game_get 0) koth_flag_a (osa_utils_get_marker_type "poi a"))
+	(chud_track_object_for_player_with_priority (elite_player_in_game_get 1) koth_flag_a (osa_utils_get_marker_type "poi a"))
+	(chud_track_object_for_player_with_priority (elite_player_in_game_get 2) koth_flag_a (osa_utils_get_marker_type "poi a"))
+	(chud_track_object_for_player_with_priority (elite_player_in_game_get 3) koth_flag_a (osa_utils_get_marker_type "poi a"))
+	(chud_track_object_for_player_with_priority (elite_player_in_game_get 4) koth_flag_a (osa_utils_get_marker_type "poi a"))
+	(chud_track_object_for_player_with_priority (elite_player_in_game_get 5) koth_flag_a (osa_utils_get_marker_type "poi a"))
+	(chud_track_object_for_player_with_priority (elite_player_in_game_get 6) koth_flag_a (osa_utils_get_marker_type "poi a"))
+	(chud_track_object_for_player_with_priority (elite_player_in_game_get 7) koth_flag_a (osa_utils_get_marker_type "poi a"))
+    
+
+	(chud_track_object_for_player_with_priority (human_player_in_game_get 0) koth_flag_b (osa_utils_get_marker_type "poi b"))
+	(chud_track_object_for_player_with_priority (human_player_in_game_get 1) koth_flag_b (osa_utils_get_marker_type "poi b"))
+	(chud_track_object_for_player_with_priority (human_player_in_game_get 2) koth_flag_b (osa_utils_get_marker_type "poi b"))
+	(chud_track_object_for_player_with_priority (human_player_in_game_get 3) koth_flag_b (osa_utils_get_marker_type "poi b"))
+	(chud_track_object_for_player_with_priority (human_player_in_game_get 4) koth_flag_b (osa_utils_get_marker_type "poi b"))
+	(chud_track_object_for_player_with_priority (human_player_in_game_get 5) koth_flag_b (osa_utils_get_marker_type "poi b"))
+	(chud_track_object_for_player_with_priority (human_player_in_game_get 6) koth_flag_b (osa_utils_get_marker_type "poi b"))
+	(chud_track_object_for_player_with_priority (human_player_in_game_get 7) koth_flag_b (osa_utils_get_marker_type "poi b"))
+    
+	(chud_track_object_for_player_with_priority (elite_player_in_game_get 0) koth_flag_b (osa_utils_get_marker_type "poi b"))
+	(chud_track_object_for_player_with_priority (elite_player_in_game_get 1) koth_flag_b (osa_utils_get_marker_type "poi b"))
+	(chud_track_object_for_player_with_priority (elite_player_in_game_get 2) koth_flag_b (osa_utils_get_marker_type "poi b"))
+	(chud_track_object_for_player_with_priority (elite_player_in_game_get 3) koth_flag_b (osa_utils_get_marker_type "poi b"))
+	(chud_track_object_for_player_with_priority (elite_player_in_game_get 4) koth_flag_b (osa_utils_get_marker_type "poi b"))
+	(chud_track_object_for_player_with_priority (elite_player_in_game_get 5) koth_flag_b (osa_utils_get_marker_type "poi b"))
+	(chud_track_object_for_player_with_priority (elite_player_in_game_get 6) koth_flag_b (osa_utils_get_marker_type "poi b"))
+	(chud_track_object_for_player_with_priority (elite_player_in_game_get 7) koth_flag_b (osa_utils_get_marker_type "poi b"))
+    
+
+	(chud_track_object_for_player_with_priority (human_player_in_game_get 0) koth_flag_c (osa_utils_get_marker_type "poi c"))
+	(chud_track_object_for_player_with_priority (human_player_in_game_get 1) koth_flag_c (osa_utils_get_marker_type "poi c"))
+	(chud_track_object_for_player_with_priority (human_player_in_game_get 2) koth_flag_c (osa_utils_get_marker_type "poi c"))
+	(chud_track_object_for_player_with_priority (human_player_in_game_get 3) koth_flag_c (osa_utils_get_marker_type "poi c"))
+	(chud_track_object_for_player_with_priority (human_player_in_game_get 4) koth_flag_c (osa_utils_get_marker_type "poi c"))
+	(chud_track_object_for_player_with_priority (human_player_in_game_get 5) koth_flag_c (osa_utils_get_marker_type "poi c"))
+	(chud_track_object_for_player_with_priority (human_player_in_game_get 6) koth_flag_c (osa_utils_get_marker_type "poi c"))
+	(chud_track_object_for_player_with_priority (human_player_in_game_get 7) koth_flag_c (osa_utils_get_marker_type "poi c"))
+    
+	(chud_track_object_for_player_with_priority (elite_player_in_game_get 0) koth_flag_c (osa_utils_get_marker_type "poi c"))
+	(chud_track_object_for_player_with_priority (elite_player_in_game_get 1) koth_flag_c (osa_utils_get_marker_type "poi c"))
+	(chud_track_object_for_player_with_priority (elite_player_in_game_get 2) koth_flag_c (osa_utils_get_marker_type "poi c"))
+	(chud_track_object_for_player_with_priority (elite_player_in_game_get 3) koth_flag_c (osa_utils_get_marker_type "poi c"))
+	(chud_track_object_for_player_with_priority (elite_player_in_game_get 4) koth_flag_c (osa_utils_get_marker_type "poi c"))
+	(chud_track_object_for_player_with_priority (elite_player_in_game_get 5) koth_flag_c (osa_utils_get_marker_type "poi c"))
+	(chud_track_object_for_player_with_priority (elite_player_in_game_get 6) koth_flag_c (osa_utils_get_marker_type "poi c"))
+	(chud_track_object_for_player_with_priority (elite_player_in_game_get 7) koth_flag_c (osa_utils_get_marker_type "poi c"))
 )
 
 ;; ------------------------------------------------------------------------
@@ -126,6 +235,8 @@
 ;------------------------------ PLUGINS ----------------------------------
 
 ;; --- INPUT VARS --- (plugins)
+(global ai intf_warzone_red_spawns NONE)
+(global ai intf_warzone_blue_spawns NONE)
 
 ;; ========================== PUBLIC VARIABLES Read-Only ==================================
 
@@ -145,10 +256,6 @@
 (global short osa_koth_side_c 0)
 
 
-
-(global short intf_bgm_red_score 0)
-(global short intf_bgm_blue_score 0)
-
 (global short osa_koth_capture_amt 60)
 (global long osa_koth_warn_per_a 0) ; 900 period
 (global long osa_koth_warn_per_b 0) ; 900 period
@@ -156,53 +263,223 @@
 
 
 (script dormant osa_koth_tally_score
-    ; tally every half second.
+    ; tally every half second. (15 ticks) ---> No with the active damage count we need to tally every 2 seconds (60 ticks) Need to divide win score by 4.
     (sleep_until 
         (begin 
             (if (> osa_koth_side_a 0)
-                (set intf_bgm_red_score (+ intf_bgm_red_score 1))
+                (begin 
+                    (damage_object_effect levels\solo\m45\fx\facility_deadman_impulse.damage_effect koth_base_red)
+                    (set intf_bgm_red_score (+ intf_bgm_red_score 1))
+                )
             )
             (if (> osa_koth_side_b 0)
-                (set intf_bgm_red_score (+ intf_bgm_red_score 1))
+                (begin 
+                    (damage_object_effect levels\solo\m45\fx\facility_deadman_impulse.damage_effect koth_base_red)
+                    (set intf_bgm_red_score (+ intf_bgm_red_score 1))
+                )
             )
             (if (> osa_koth_side_c 0)
-                (set intf_bgm_red_score (+ intf_bgm_red_score 1))
+                (begin 
+                    (damage_object_effect levels\solo\m45\fx\facility_deadman_impulse.damage_effect koth_base_red)
+                    (set intf_bgm_red_score (+ intf_bgm_red_score 1))
+                )
             )
             (if (< osa_koth_side_a 0)
-                (set intf_bgm_blue_score (+ intf_bgm_blue_score 1))
+                (begin 
+                    (damage_object_effect levels\solo\m45\fx\facility_deadman_impulse.damage_effect koth_base_blue)
+                    (set intf_bgm_blue_score (+ intf_bgm_blue_score 1))
+                )
             )
             (if (< osa_koth_side_b 0)
-                (set intf_bgm_blue_score (+ intf_bgm_blue_score 1))
+                (begin 
+                    (damage_object_effect levels\solo\m45\fx\facility_deadman_impulse.damage_effect koth_base_blue)
+                    (set intf_bgm_blue_score (+ intf_bgm_blue_score 1))
+                )
             )
             (if (< osa_koth_side_c 0)
-                (set intf_bgm_blue_score (+ intf_bgm_blue_score 1))
+                (begin 
+                    (damage_object_effect levels\solo\m45\fx\facility_deadman_impulse.damage_effect koth_base_blue)
+                    (set intf_bgm_blue_score (+ intf_bgm_blue_score 1))
+                )
             )
 
             FALSE
         )
-        15
+        60
     )
 )
 
-(script dormant osa_koth_update_tiers_red
-    (set intf_warzone_red_spawns gr_vip_red_t1)
-    (sleep_until (> (/ intf_bgm_blue_score intf_bgm_score_tier) 1))
-    (set intf_warzone_red_spawns gr_vip_red_t2)
-    (sleep_until (> (/ intf_bgm_blue_score intf_bgm_score_tier) 2))
-    (set intf_warzone_red_spawns gr_vip_red_t3)
-    (sleep_until (> (/ intf_bgm_blue_score intf_bgm_score_tier) 3))
-    (set intf_warzone_red_spawns gr_vip_red_t4)
+(script static void (osa_koth_spawn_by_tier (short side) (short tier_level))
+    (if (= 1 side)
+        (begin 
+            (if (= 0 tier_level)
+                (begin_random_count 1
+                    (ai_place sq_def_red_t1)
+                )
+            )
+            (if (= 1 tier_level)
+                (begin_random_count 1
+                    (ai_place sq_def_red_t1)
+                    (ai_place sq_def_red_t2)
+                )
+            )
+            (if (= 2 tier_level)
+                (begin_random_count 1
+                    (ai_place sq_def_red_t1)
+                    (ai_place sq_def_red_t2)
+                    (ai_place sq_def_red_t3)
+                )
+            )
+            (if (= 3 tier_level)
+                (begin_random_count 1
+                    (ai_place sq_def_red_t1)
+                    (ai_place sq_def_red_t2)
+                    (ai_place sq_def_red_t3)
+                    (ai_place sq_def_red_t4)
+                )
+            )
+            (if (= 4 tier_level)
+                (begin_random_count 1
+                    (ai_place sq_def_red_t1)
+                    (ai_place sq_def_red_t2)
+                    (ai_place sq_def_red_t3)
+                    (ai_place sq_def_red_t4)
+                    (ai_place sq_def_red_t5)
+                )
+            )
+            (if (= 5 tier_level)
+                (begin_random_count 1
+                    (ai_place sq_def_red_t1)
+                    (ai_place sq_def_red_t2)
+                    (ai_place sq_def_red_t3)
+                    (ai_place sq_def_red_t4)
+                    (ai_place sq_def_red_t5)
+                    (ai_place sq_def_red_t6)
+                )
+            )
+            (if (= 6 tier_level)
+                (begin_random_count 1
+                    (ai_place sq_def_red_t1)
+                    (ai_place sq_def_red_t2)
+                    (ai_place sq_def_red_t3)
+                    (ai_place sq_def_red_t4)
+                    (ai_place sq_def_red_t5)
+                    (ai_place sq_def_red_t6)
+                    (ai_place sq_def_red_t7)
+                )
+            )
+            (if (<= 7 tier_level)
+                (begin_random_count 1
+                    (ai_place sq_def_red_t1)
+                    (ai_place sq_def_red_t2)
+                    (ai_place sq_def_red_t3)
+                    (ai_place sq_def_red_t4)
+                    (ai_place sq_def_red_t5)
+                    (ai_place sq_def_red_t5)
+                    (ai_place sq_def_red_t6)
+                    (ai_place sq_def_red_t6)
+                    (ai_place sq_def_red_t7)
+                    (ai_place sq_def_red_t7)
+                )
+            )
+        )
+    )
+    (if (= -1 side)
+        (begin 
+            (if (= 0 tier_level)
+                (begin_random_count 1
+                    (ai_place sq_def_blue_t1)
+                )
+            )
+            (if (= 1 tier_level)
+                (begin_random_count 1
+                    (ai_place sq_def_blue_t1)
+                    (ai_place sq_def_blue_t2)
+                )
+            )
+            (if (= 2 tier_level)
+                (begin_random_count 1
+                    (ai_place sq_def_blue_t1)
+                    (ai_place sq_def_blue_t2)
+                    (ai_place sq_def_blue_t3)
+                )
+            )
+            (if (= 3 tier_level)
+                (begin_random_count 1
+                    (ai_place sq_def_blue_t1)
+                    (ai_place sq_def_blue_t2)
+                    (ai_place sq_def_blue_t3)
+                    (ai_place sq_def_blue_t4)
+                )
+            )
+            (if (= 4 tier_level)
+                (begin_random_count 1
+                    (ai_place sq_def_blue_t1)
+                    (ai_place sq_def_blue_t2)
+                    (ai_place sq_def_blue_t3)
+                    (ai_place sq_def_blue_t4)
+                    (ai_place sq_def_blue_t5)
+                )
+            )
+            (if (= 5 tier_level)
+                (begin_random_count 1
+                    (ai_place sq_def_blue_t1)
+                    (ai_place sq_def_blue_t2)
+                    (ai_place sq_def_blue_t3)
+                    (ai_place sq_def_blue_t4)
+                    (ai_place sq_def_blue_t5)
+                    (ai_place sq_def_blue_t6)
+                )
+            )
+            (if (= 6 tier_level)
+                (begin_random_count 1
+                    (ai_place sq_def_blue_t1)
+                    (ai_place sq_def_blue_t2)
+                    (ai_place sq_def_blue_t3)
+                    (ai_place sq_def_blue_t4)
+                    (ai_place sq_def_blue_t5)
+                    (ai_place sq_def_blue_t6)
+                    (ai_place sq_def_blue_t7)
+                )
+            )
+            (if (<= 7 tier_level)
+                (begin_random_count 1
+                    (ai_place sq_def_blue_t1)
+                    (ai_place sq_def_blue_t2)
+                    (ai_place sq_def_blue_t3)
+                    (ai_place sq_def_blue_t4)
+                    (ai_place sq_def_blue_t4)
+                    (ai_place sq_def_blue_t5)
+                    (ai_place sq_def_blue_t5)
+                    (ai_place sq_def_blue_t6)
+                    (ai_place sq_def_blue_t6)
+                    (ai_place sq_def_blue_t7)
+                    (ai_place sq_def_blue_t7)
+                )
+            )
+        )
+    )
 )
 
-(script dormant osa_koth_update_tiers_blue
-    (set intf_warzone_blue_spawns gr_vip_blue_t1)
-    (sleep_until (> (/ intf_bgm_red_score intf_bgm_score_tier) 1))
-    (set intf_warzone_blue_spawns gr_vip_blue_t2)
-    (sleep_until (> (/ intf_bgm_red_score intf_bgm_score_tier) 2))
-    (set intf_warzone_blue_spawns gr_vip_blue_t3)
-    (sleep_until (> (/ intf_bgm_red_score intf_bgm_score_tier) 3))
-    (set intf_warzone_blue_spawns gr_vip_blue_t4)
-)
+; (script dormant osa_koth_update_tiers_red
+;     (set intf_warzone_red_spawns gr_vip_red_t1)
+;     (sleep_until (> (/ intf_bgm_blue_score intf_bgm_score_tier) 1))
+;     (set intf_warzone_red_spawns gr_vip_red_t2)
+;     (sleep_until (> (/ intf_bgm_blue_score intf_bgm_score_tier) 2))
+;     (set intf_warzone_red_spawns gr_vip_red_t3)
+;     (sleep_until (> (/ intf_bgm_blue_score intf_bgm_score_tier) 3))
+;     (set intf_warzone_red_spawns gr_vip_red_t4)
+; )
+
+; (script dormant osa_koth_update_tiers_blue
+;     (set intf_warzone_blue_spawns gr_vip_blue_t1)
+;     (sleep_until (> (/ intf_bgm_red_score intf_bgm_score_tier) 1))
+;     (set intf_warzone_blue_spawns gr_vip_blue_t2)
+;     (sleep_until (> (/ intf_bgm_red_score intf_bgm_score_tier) 2))
+;     (set intf_warzone_blue_spawns gr_vip_blue_t3)
+;     (sleep_until (> (/ intf_bgm_red_score intf_bgm_score_tier) 3))
+;     (set intf_warzone_blue_spawns gr_vip_blue_t4)
+; )
 
 (script dormant osa_koth_replinish_blue_ai
     (sleep_until 
@@ -213,7 +490,7 @@
                 (begin 
                     (if (<= (ai_living_count gr_koth_def_blue) 12)
                         (begin 
-                            (osa_koth_spawn_by_tier -1 (/ intf_bgm_blue_score intf_bgm_score_tier));; send opposite tally bc we reward losers :)
+                            (osa_koth_spawn_by_tier -1 (/ intf_bgm_red_score intf_bgm_score_tier));; send opposite tally bc we reward losers :)
                             (sleep intf_dir_migration_wait)
                         )
                     )
